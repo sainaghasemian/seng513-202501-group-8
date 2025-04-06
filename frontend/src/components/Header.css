@@ -1,0 +1,25 @@
+.uni-header {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f1e8ff;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+  }
+  
+  .uni-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #6a3fbf;
+  }
+  
+  .calendar-icon {
+    width: 40px;
+    margin-right: 10px;
+  }
+  
