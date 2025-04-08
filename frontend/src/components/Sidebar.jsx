@@ -13,7 +13,7 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
 
     return (
         <div
-            className={`bg-[#E5E4E2] fixed top-0 left-0 z-50 shadow-md transition-all duration-300 flex flex-col ${collapsed ? "w-[70px]" : "w-64"
+            className={`bg-[#E5E4E2] fixed top-0 left-0 z-50 shadow-md transition-all duration-300 flex flex-col ${collapsed ? "w-[60px]" : "w-48"
                 }`}
             style={{
                 paddingTop: headerHeight,
@@ -44,7 +44,7 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
                 />
                 <NavItem
                     icon={<Users />}
-                    label="Study Buddy /Shared Calendar"
+                    label="Study Buddy / Shared Calendar"
                     collapsed={collapsed}
                     onClick={() => navigate("/study-buddy")}
                 />

@@ -8,6 +8,7 @@ import DailyTasks from "./components/DailyTasks";
 import Layout from "./components/Layout";
 
 import "./App.css";
+import StudyBuddyPage from "./pages/StudyBuddyPage";
 
 function App() {
   return (
@@ -22,6 +23,14 @@ function App() {
             element={
               <Layout>
                 <DailyTasks />
+              </Layout>
+            }
+          />
+          <Route
+            path="/study-buddy"
+            element={
+              <Layout>
+                <StudyBuddyPage />
               </Layout>
             }
           />
