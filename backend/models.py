@@ -7,3 +7,12 @@ class Task(Base):
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String(255))
     completed = Column(Boolean, default=False)
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    uid = Column(String(128), unique=True, nullable=False)        # Firebase UID
+    email = Column(String(255), unique=True, nullable=False)
+    first_name = Column(String(100))
+    last_name = Column(String(100))
+    school = Column(String(255))

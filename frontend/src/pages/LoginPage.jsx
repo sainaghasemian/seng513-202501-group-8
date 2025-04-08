@@ -1,13 +1,40 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase"; // adjust the path as needed
 import Header from "../components/Header";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  // State for form fields
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // TODO: Add Firebase login logic here
-    navigate("/dashboard");
+    setError("");
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+
+      // Optional: Send token to backend for verification
+      await fetch("http://localhost:8000/api/protected", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Invalid email or password.");
+      console.error("Login error:", err);
+    }
   };
 
   return (
@@ -21,11 +48,20 @@ export default function LoginPage() {
             Create An Account!
           </a>
         </p>
+
+        {error && (
+          <div className="text-red-600 font-medium text-center mb-4">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block font-semibold mb-1">Email</label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="john.doe@domain.com"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -36,6 +72,8 @@ export default function LoginPage() {
             <label className="block font-semibold mb-1">Password</label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
