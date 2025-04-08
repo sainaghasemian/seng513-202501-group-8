@@ -34,7 +34,7 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
                     icon={<LayoutDashboard />}
                     label="UniPlanner"
                     collapsed={collapsed}
-                    onClick={() => navigate("/tasks")}
+                    onClick={() => navigate("/dashboard")}
                 />
                 <NavItem
                     icon={<CalendarDays />}
