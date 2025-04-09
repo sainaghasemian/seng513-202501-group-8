@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { useAuth } from "../components/AuthContext"; // Import the AuthContext
 
 const CreateAccountPage = () => {
   const navigate = useNavigate();
+  const { user, signUp } = useAuth(); // Access user and signUp function from AuthContext
 
   const [form, setForm] = useState({
     email: "",
@@ -18,6 +18,13 @@ const CreateAccountPage = () => {
 
   const [error, setError] = useState("");
 
+  // Redirect to the main page if the user is already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -29,36 +36,42 @@ const CreateAccountPage = () => {
     const { email, password, confirmPassword, firstName, lastName, school } = form;
 
     if (password !== confirmPassword) {
-        setError("Passwords do not match.");
-        return;
+      setError("Passwords do not match.");
+      return;
     }
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const idToken = await userCredential.user.getIdToken();
+      // Use the signUp function from AuthContext
+      const idToken = await signUp(email, password);
 
-        // Send additional data to backend
-        const res = await fetch("http://localhost:8000/users", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${idToken}`, // Include the token in the Authorization header
-            },
-            body: JSON.stringify({
-                first_name: firstName,
-                last_name: lastName,
-                school: school,
-            }),
-        });
+      // Send additional data to backend
+      const res = await fetch("http://localhost:8000/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`, // Include the token in the Authorization header
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          school: school,
+        }),
+      });
 
-        if (!res.ok) {
-            throw new Error("Failed to create user");
-        }
+      if (!res.ok) {
+        throw new Error("Failed to create user");
+      }
 
-        navigate("/dashboard");
+      navigate("/dashboard");
     } catch (err) {
-        console.error("Signup error:", err);
+      console.error("Signup error:", err);
+
+      // Check for Firebase-specific error codes
+      if (err.code === "auth/email-already-in-use") {
+        setError("The email address is already in use. Please try logging in or use a different email.");
+      } else {
         setError("Failed to create account. Please check your info or try again.");
+      }
     }
   };
 

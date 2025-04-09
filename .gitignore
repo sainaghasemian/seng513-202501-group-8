@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 *.pyo
 *firebase_key.json
+*.env

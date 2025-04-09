@@ -5,15 +5,23 @@ import {
     Settings,
     ChevronsLeft,
     ChevronsRight,
+    LogOut,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/AuthContext"; // Import the AuthContext
 
 const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth(); // Access the logout function from AuthContext
+
+    const handleLogout = async () => {
+        await logout(); // Log out the user
+        navigate("/"); // Redirect to the login page
+    };
 
     return (
         <div
-            className={`bg-[#E5E4E2] fixed top-0 left-0 z-50 shadow-md transition-all duration-300 flex flex-col ${collapsed ? "w-[60px]" : "w-48"
+            className={`bg-[#E5E4E2] fixed top-0 left-0 z-50 shadow-md transition-all duration-300 flex flex-col justify-between ${collapsed ? "w-[60px]" : "w-48"
                 }`}
             style={{
                 paddingTop: headerHeight,
@@ -55,6 +63,16 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
                     onClick={() => navigate("/settings")}
                 />
             </nav>
+
+            {/* Logout Button */}
+            <div className="px-3 pb-4">
+                <NavItem
+                    icon={<LogOut />}
+                    label="Logout"
+                    collapsed={collapsed}
+                    onClick={handleLogout}
+                />
+            </div>
         </div>
     );
 };

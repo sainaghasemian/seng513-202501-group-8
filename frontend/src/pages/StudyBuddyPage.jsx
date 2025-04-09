@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext'; // Import the AuthContext
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
 const StudyBuddyPage = () => {
+    const { user, loading } = useAuth(); // Access user and loading state from AuthContext
+    const navigate = useNavigate();
+
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [email, setEmail] = useState('');
 
     const courses = ['ENEL 500', 'ENSF 545', 'SENG 513', 'CPSC 481', 'SENG 533'];
+
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/'); // Redirect to login if not authenticated
+        }
+    }, [user, loading, navigate]);
 
     const handleCourseChange = (course) => {
         setSelectedCourses((prev) =>
@@ -21,6 +32,10 @@ const StudyBuddyPage = () => {
         console.log('Sending schedule for:', selectedCourses, 'to', email);
         // Add logic to send the selected courses and calendar view
     };
+
+    if (loading) {
+        return <p className="text-sm text-gray-400">Loading...</p>; // Show a loading state while checking authentication
+    }
 
     return (
         <div className="flex flex-col md:flex-row gap-6 p-8">

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Pencil, Plus } from "lucide-react";
-import { auth } from "../firebase"; // Import Firebase auth
+import { useAuth } from "../components/AuthContext"; // Import the AuthContext
 
 export default function DailyTasks() {
+    const { user, loading: authLoading } = useAuth(); // Access user and loading state from AuthContext
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -10,9 +11,11 @@ export default function DailyTasks() {
 
     // Fetch tasks from backend
     useEffect(() => {
+        if (!user) return; // Do nothing if the user is not authenticated
+
         const fetchTasks = async () => {
             try {
-                const idToken = await auth.currentUser.getIdToken(); // Get the Firebase ID token
+                const idToken = await user.getIdToken(); // Get the Firebase ID token from the user object
                 const res = await fetch("http://localhost:8000/tasks", {
                     headers: {
                         Authorization: `Bearer ${idToken}`, // Include the token in the Authorization header
@@ -26,17 +29,22 @@ export default function DailyTasks() {
                 setLoading(false);
             }
         };
+
         fetchTasks();
-    }, []);
+    }, [user]);
 
     const toggleTask = async (id, currentState) => {
+        if (!user) return; // Ensure the user is authenticated
+
         const updated = !currentState;
 
         try {
+            const idToken = await user.getIdToken(); // Get the Firebase ID token from the user object
             const res = await fetch(`http://localhost:8000/tasks/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${idToken}`,
                 },
                 body: JSON.stringify({ completed: updated }),
             });
@@ -56,10 +64,10 @@ export default function DailyTasks() {
     };
 
     const handleAddTask = async () => {
-        if (!newTaskText.trim()) return;
+        if (!newTaskText.trim() || !user) return; // Ensure the user is authenticated
 
         try {
-            const idToken = await auth.currentUser.getIdToken(); // Get the Firebase ID token
+            const idToken = await user.getIdToken(); // Get the Firebase ID token from the user object
             const res = await fetch("http://localhost:8000/tasks", {
                 method: "POST",
                 headers: {
@@ -77,6 +85,14 @@ export default function DailyTasks() {
         }
     };
 
+    if (authLoading || loading) {
+        return <p className="text-sm text-gray-400">Loading...</p>;
+    }
+
+    if (!user) {
+        return <p className="text-sm text-gray-400">Please log in to view your tasks.</p>;
+    }
+
     return (
         <div className="bg-white rounded-xl p-6 shadow-sm h-full">
             <div className="flex justify-between items-center mb-4">
@@ -84,33 +100,28 @@ export default function DailyTasks() {
                 <Pencil size={18} className="text-gray-400 cursor-pointer" />
             </div>
 
-            {loading ? (
-                <p className="text-sm text-gray-400">Loading...</p>
-            ) : (
-                <ul className="space-y-3 mb-6">
-                    {Array.isArray(tasks) ? (
-                        tasks.map((task) => (
-                            <li key={task.id} className="flex items-start gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={task.completed}
-                                    onChange={() => toggleTask(task.id, task.completed)}
-                                    className="accent-purple-500 mt-1"
-                                />
-                                <span
-                                    className={`text-sm ${
-                                        task.completed ? "line-through text-gray-400" : "text-gray-800"
+            <ul className="space-y-3 mb-6">
+                {Array.isArray(tasks) ? (
+                    tasks.map((task) => (
+                        <li key={task.id} className="flex items-start gap-2">
+                            <input
+                                type="checkbox"
+                                checked={task.completed}
+                                onChange={() => toggleTask(task.id, task.completed)}
+                                className="accent-purple-500 mt-1"
+                            />
+                            <span
+                                className={`text-sm ${task.completed ? "line-through text-gray-400" : "text-gray-800"
                                     }`}
-                                >
-                                    {task.text}
-                                </span>
-                            </li>
-                        ))
-                    ) : (
-                        <p className="text-sm text-gray-400">No tasks available.</p>
-                    )}
-                </ul>
-            )}
+                            >
+                                {task.text}
+                            </span>
+                        </li>
+                    ))
+                ) : (
+                    <p className="text-sm text-gray-400">No tasks available.</p>
+                )}
+            </ul>
 
             <button
                 onClick={() => setShowModal(true)}

@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext'; // Import the AuthContext
 
 const SettingsPage = () => {
+    const { user, loading } = useAuth(); // Access user and loading state from AuthContext
+    const navigate = useNavigate();
+
     const [timeFormat, setTimeFormat] = useState('12H');
     const [notifications, setNotifications] = useState(true);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/'); // Redirect to login if not authenticated
+        }
+    }, [user, loading, navigate]);
 
     const handleSave = () => {
         console.log('Settings saved:', { timeFormat, notifications });
@@ -15,6 +26,10 @@ const SettingsPage = () => {
         }
     };
 
+    if (loading) {
+        return <p className="text-sm text-gray-400">Loading...</p>; // Show a loading state while checking authentication
+    }
+
     return (
         <div className="flex flex-col items-center p-10">
             {/* Account Info */}
@@ -23,7 +38,7 @@ const SettingsPage = () => {
                 <label className="block mb-1 font-medium">Email</label>
                 <input
                     type="text"
-                    value="john.doe@domain.com"
+                    value={user?.email || 'N/A'} // Display the user's email if available
                     disabled
                     className="w-full px-4 py-2 bg-gray-200 rounded"
                 />

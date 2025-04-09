@@ -1,11 +1,19 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase"; // adjust the path as needed
 import Header from "../components/Header";
+import { useAuth } from "../components/AuthContext";
 
 export default function LoginPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard"); // Redirect if already logged in
+    }
+  }, [user, navigate]);
 
   // State for form fields
   const [email, setEmail] = useState("");

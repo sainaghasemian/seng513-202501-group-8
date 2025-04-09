@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext'; // Import the AuthContext
 import DailyTasks from '../components/DailyTasks';
 import WorkCard from '../components/WorkCard';
 import Calendar from '../components/Calendar';
 import CompletionBar from '../components/CompletionBar';
 
 const MainPage = () => {
+    const { user, loading } = useAuth(); // Access user and loading state from AuthContext
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/'); // Redirect to login if not authenticated
+        }
+    }, [user, loading, navigate]);
+    
     const tasks = [
         { title: 'Submit Assignment 3', dueDate: 'Apr 10' },
         { title: 'Read Chapter 5', dueDate: 'Apr 12' },
@@ -17,6 +28,10 @@ const MainPage = () => {
 
     const completed = 3;
     const total = 5;
+
+    if (loading) {
+        return <p className="text-sm text-gray-400">Loading...</p>; // Show a loading state while checking authentication
+    }
 
     return (
         <div className="pt-[4rem] px-4 flex flex-col md:flex-row gap-4">

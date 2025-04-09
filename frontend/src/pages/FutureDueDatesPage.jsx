@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext'; // Import the AuthContext
 
 // Sample deadline data
 const deadlines = [
@@ -18,6 +20,14 @@ const courseList = ['ENEL 500', 'ENSF 545', 'SENG 513', 'CPSC 481', 'SENG 533'];
 const FutureDueDatesPage = () => {
     const [selectedCourses, setSelectedCourses] = useState(['ENEL 500', 'ENSF 545', 'CPSC 481']);
     const [checkedTasks, setCheckedTasks] = useState([]);
+    const { user, loading } = useAuth(); // Access user and loading state from AuthContext
+    const navigate = useNavigate();
+
+    useEffect(() => {
+            if (!loading && !user) {
+                navigate('/'); // Redirect to login if not authenticated
+            }
+        }, [user, loading, navigate]);
 
     const today = new Date().toISOString().split('T')[0];
 
