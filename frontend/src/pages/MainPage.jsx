@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/AuthContext'; // Import the AuthContext
+import { useAuth } from '../components/AuthContext'; 
 import DailyTasks from '../components/DailyTasks';
 import WorkCard from '../components/WorkCard';
 import Calendar from '../components/Calendar';

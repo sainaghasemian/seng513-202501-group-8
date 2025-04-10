@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/AuthContext'; // Import the AuthContext
+import { useAuth } from '../components/AuthContext'; 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -34,7 +34,7 @@ const StudyBuddyPage = () => {
     };
 
     if (loading) {
-        return <p className="text-sm text-gray-400">Loading...</p>; // Show a loading state while checking authentication
+        return <p className="text-sm text-gray-400">Loading...</p>; 
     }
 
     return (

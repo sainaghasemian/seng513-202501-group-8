@@ -21,7 +21,7 @@ app = FastAPI()
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Replace with your frontend origin in production
+    allow_origins=["http://localhost:3000"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,7 +67,7 @@ class UserCreate(BaseModel):
 @app.get("/tasks", response_model=list[TaskOut])
 def get_tasks(
     db: Session = Depends(get_db),
-    user=Depends(verify_firebase_token)  # Protect this route
+    user=Depends(verify_firebase_token)  
 ):
     return db.query(Task).all()
 

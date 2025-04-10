@@ -11,7 +11,7 @@ class Task(Base):
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    uid = Column(String(128), unique=True, nullable=False)        # Firebase UID
+    uid = Column(String(128), unique=True, nullable=False)        # Note: This is Firebase UID
     email = Column(String(255), unique=True, nullable=False)
     first_name = Column(String(100))
     last_name = Column(String(100))

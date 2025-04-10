@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext'; // Import the AuthContext
 
 // Sample deadline data
+// TO DO: change these
 const deadlines = [
     { course: 'CPSC 481', task: 'Submit Lab 1 Report', date: '2025-02-24' },
     { course: 'ENEL 500', task: 'Finalize Wireframes', date: '2025-02-24' },

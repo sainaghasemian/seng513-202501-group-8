@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/AuthContext'; // Import the AuthContext
+import { useAuth } from '../components/AuthContext'; 
 
 const SettingsPage = () => {
     const { user, loading } = useAuth(); // Access user and loading state from AuthContext
@@ -27,7 +27,7 @@ const SettingsPage = () => {
     };
 
     if (loading) {
-        return <p className="text-sm text-gray-400">Loading...</p>; // Show a loading state while checking authentication
+        return <p className="text-sm text-gray-400">Loading...</p>; 
     }
 
     return (

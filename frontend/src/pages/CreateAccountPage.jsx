@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../components/AuthContext"; // Import the AuthContext
+import { useAuth } from "../components/AuthContext"; 
 
 const CreateAccountPage = () => {
   const navigate = useNavigate();

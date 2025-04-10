@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase"; // adjust the path as needed
+import { auth } from "../firebase"; 
 import Header from "../components/Header";
 import { useAuth } from "../components/AuthContext";
 
@@ -11,7 +11,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard"); // Redirect if already logged in
+      navigate("/dashboard"); // Redirect if already logged in to an account
     }
   }, [user, navigate]);
 
