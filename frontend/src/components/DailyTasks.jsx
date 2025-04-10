@@ -1,24 +1,36 @@
 import { useEffect, useState } from "react";
 import { Pencil, Plus } from "lucide-react";
-import { useAuth } from "../components/AuthContext"; // Import the AuthContext
+import { useAuth } from "../components/AuthContext"; 
 
 export default function DailyTasks() {
-    const { user, loading: authLoading } = useAuth(); // Access user and loading state from AuthContext
+    const { user, loading: authLoading } = useAuth(); 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [newTaskText, setNewTaskText] = useState("");
+    const [selectedCourse, setSelectedCourse] = useState("");
+    const [tag, setTag] = useState("");
+    const [deadline, setDeadline] = useState("");
+    const [dueDate, setDueDate] = useState("");
+    const handleAddCourse = () => {
+        // TODO: store and assign a color per new course
+        const newCourse = prompt("Enter course name:");
+        if (newCourse) {
+          alert(`"${newCourse}" was added! (Color auto-assignment to be implemented.)`);
+          // TODO: Store this in a `courses` state array in a real app
+        }
+      };
 
     // Fetch tasks from backend
     useEffect(() => {
-        if (!user) return; // Do nothing if the user is not authenticated
+        if (!user) return; 
 
         const fetchTasks = async () => {
             try {
                 const idToken = await user.getIdToken(); // Get the Firebase ID token from the user object
                 const res = await fetch("http://localhost:8000/tasks", {
                     headers: {
-                        Authorization: `Bearer ${idToken}`, // Include the token in the Authorization header
+                        Authorization: `Bearer ${idToken}`, 
                     },
                 });
                 const data = await res.json();
@@ -134,32 +146,97 @@ export default function DailyTasks() {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-xl w-80 shadow-lg space-y-4">
-                        <h3 className="text-lg font-semibold">New Task</h3>
+                    <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-lg space-y-4">
+                    <h3 className="text-2xl font-semibold text-center">Add New Task</h3>
+
+                    {/* Task Name */}
+                    <div>
+                        <label className="font-semibold">Task Name</label>
                         <input
-                            type="text"
-                            placeholder="Enter task description..."
-                            value={newTaskText}
-                            onChange={(e) => setNewTaskText(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        type="text"
+                        value={newTaskText}
+                        onChange={(e) => setNewTaskText(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
+                        placeholder="Enter task title"
+                        required
                         />
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="text-sm px-4 py-1.5 rounded-md bg-gray-200 hover:bg-gray-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleAddTask}
-                                className="text-sm px-4 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700"
-                            >
-                                Add Task
-                            </button>
+                    </div>
+
+                    {/* Course Selection */}
+                    <div>
+                        <label className="font-semibold block">Course</label>
+                        <div className="flex flex-wrap gap-3 mt-1">
+                        {["ENEL 500", "ENSF 545", "SENG 513", "CPSC 481", "SENG 533"].map((course, idx) => (
+                            <label key={idx} className="flex items-center gap-1">
+                            <input
+                                type="radio"
+                                name="course"
+                                value={course}
+                                checked={selectedCourse === course}
+                                onChange={() => setSelectedCourse(course)}
+                            />
+                            {course}
+                            </label>
+                        ))}
+                        <button onClick={handleAddCourse} className="text-blue-600 text-sm underline ml-2">+ Add Course</button>
                         </div>
                     </div>
+
+                    {/* Tag */}
+                    <div>
+                        <label className="font-semibold">Tag</label>
+                        <input
+                        type="text"
+                        value={tag}
+                        onChange={(e) => setTag(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
+                        placeholder="Ex: High Priority"
+                        />
+                    </div>
+
+                    {/* Deadline Time */}
+                    <div>
+                        <label className="font-semibold">Deadline</label>
+                        <input
+                        type="time"
+                        value={deadline}
+                        onChange={(e) => setDeadline(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
+                        required
+                        />
+                    </div>
+
+                    {/* Date Picker */}
+                    <div>
+                        <label className="font-semibold">Due Date</label>
+                        <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
+                        required
+                        />
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button
+                        onClick={() => setShowModal(false)}
+                        className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                        >
+                        Cancel
+                        </button>
+                        <button
+                        onClick={handleAddTask}
+                        className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                        Add Task
+                        </button>
+                    </div>
+                    </div>
                 </div>
-            )}
+                )}
+
         </div>
     );
 }
