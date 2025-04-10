@@ -20,9 +20,55 @@ const SettingsPage = () => {
         }
     }, [user, loading, navigate]);
 
-    const handleSave = () => {
-        console.log('Settings saved:', { timeFormat, notifications });
-        alert('Settings saved!');
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await fetch("http://localhost:8000/users/settings", {
+                    headers: {
+                        Authorization: `Bearer ${user?.accessToken}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch settings");
+                }
+
+                const data = await response.json();
+                setTimeFormat(data.time_format ? "12H" : "24H");
+                setNotifications(data.notifications);
+            } catch (error) {
+                console.error("Error fetching settings:", error);
+            }
+        };
+
+        if (user) {
+            fetchSettings();
+        }
+    }, [user]);
+
+    const handleSave = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/users/settings", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${user?.accessToken}`,
+                },
+                body: JSON.stringify({
+                    time_format: timeFormat === "12H",
+                    notifications: notifications,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save settings");
+            }
+
+            alert("Settings saved!");
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            alert("Failed to save settings. Please try again.");
+        }
     };
 
     const handleDeleteAccount = async () => {

@@ -63,6 +63,10 @@ class UserCreate(BaseModel):
     last_name: str
     school: str
 
+class UserUpdate(BaseModel):
+    time_format: bool
+    notifications: bool
+
 # Routes
 @app.get("/tasks", response_model=list[TaskOut])
 def get_tasks(
@@ -119,6 +123,36 @@ def create_user(
         return {"message": "User created successfully", "user_id": new_user.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.patch("/users/settings")
+def update_user_settings(
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(verify_firebase_token),
+):
+    db_user = db.query(User).filter(User.uid == user["uid"]).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_user.time_format = user_data.time_format
+    db_user.notifications = user_data.notifications
+    db.commit()
+    db.refresh(db_user)
+    return {"message": "User settings updated successfully"}
+
+@app.get("/users/settings")
+def get_user_settings(
+    db: Session = Depends(get_db),
+    user=Depends(verify_firebase_token),
+):
+    db_user = db.query(User).filter(User.uid == user["uid"]).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "time_format": db_user.time_format,
+        "notifications": db_user.notifications,
+    }
 
 # Initialize DB
 Base.metadata.create_all(bind=engine)
