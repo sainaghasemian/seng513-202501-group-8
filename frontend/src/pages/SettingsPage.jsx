@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
-import ChangePassword from '../components/ChangePassword'; // Import the ChangePassword component
+import ChangePassword from '../components/ChangePassword';
+import DeleteAccountPopup from '../components/DeleteAccountPopup';
+import { deleteUser } from "firebase/auth";
 
 const SettingsPage = () => {
-    const { user, loading } = useAuth(); // Access user and loading state from AuthContext
+    const { user, loading } = useAuth();
     const navigate = useNavigate();
 
     const [timeFormat, setTimeFormat] = useState('12H');
     const [notifications, setNotifications] = useState(true);
-    const [showChangePassword, setShowChangePassword] = useState(false); // State to control popup visibility
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
-            navigate('/'); // Redirect to login if not authenticated
+            navigate('/');
         }
     }, [user, loading, navigate]);
 
@@ -22,9 +25,14 @@ const SettingsPage = () => {
         alert('Settings saved!');
     };
 
-    const handleDeleteAccount = () => {
-        if (window.confirm('Are you sure you want to delete your account?')) {
-            console.log('Account deletion initiated.');
+    const handleDeleteAccount = async () => {
+        try {
+            await deleteUser(user);
+            alert('Your account has been deleted.');
+            navigate('/');
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            alert('Failed to delete account. Please try again.');
         }
     };
 
@@ -40,13 +48,13 @@ const SettingsPage = () => {
                 <label className="block mb-1 font-medium">Email</label>
                 <input
                     type="text"
-                    value={user?.email || 'N/A'} // Display the user's email if available
+                    value={user?.email || 'N/A'}
                     disabled
                     className="w-full px-4 py-2 bg-gray-200 rounded"
                 />
             </div>
             <button
-                onClick={() => setShowChangePassword(true)} // Show the ChangePassword popup
+                onClick={() => setShowChangePassword(true)}
                 className="bg-black text-white py-2 px-4 rounded mb-10 hover:bg-gray-800"
             >
                 Change Password
@@ -108,7 +116,7 @@ const SettingsPage = () => {
 
             {/* Delete + Save */}
             <button
-                onClick={handleDeleteAccount}
+                onClick={() => setShowDeletePopup(true)}
                 className="text-red-500 mb-4 hover:underline"
             >
                 Delete Account
@@ -124,6 +132,14 @@ const SettingsPage = () => {
             {/* Change Password Popup */}
             {showChangePassword && (
                 <ChangePassword onClose={() => setShowChangePassword(false)} />
+            )}
+
+            {/* Delete Account Popup */}
+            {showDeletePopup && (
+                <DeleteAccountPopup
+                    onConfirm={handleDeleteAccount}
+                    onClose={() => setShowDeletePopup(false)}
+                />
             )}
         </div>
     );

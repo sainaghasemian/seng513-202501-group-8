@@ -23,8 +23,8 @@ export default function ChangePassword({ onClose }) {
       await changePassword(currentPassword, newPassword);
       setSuccess("Password changed successfully!");
       setTimeout(() => {
-        onClose(); // Automatically close the popup
-      }, 1500); // Close after 1 second
+        onClose();
+      }, 1500);
     } catch (err) {
       setError(err.message);
     }
