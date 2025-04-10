@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/AuthContext'; 
+import { useAuth } from '../components/AuthContext';
+import ChangePassword from '../components/ChangePassword'; // Import the ChangePassword component
 
 const SettingsPage = () => {
     const { user, loading } = useAuth(); // Access user and loading state from AuthContext
@@ -8,6 +9,7 @@ const SettingsPage = () => {
 
     const [timeFormat, setTimeFormat] = useState('12H');
     const [notifications, setNotifications] = useState(true);
+    const [showChangePassword, setShowChangePassword] = useState(false); // State to control popup visibility
 
     useEffect(() => {
         if (!loading && !user) {
@@ -27,7 +29,7 @@ const SettingsPage = () => {
     };
 
     if (loading) {
-        return <p className="text-sm text-gray-400">Loading...</p>; 
+        return <p className="text-sm text-gray-400">Loading...</p>;
     }
 
     return (
@@ -43,7 +45,10 @@ const SettingsPage = () => {
                     className="w-full px-4 py-2 bg-gray-200 rounded"
                 />
             </div>
-            <button className="bg-black text-white py-2 px-4 rounded mb-10 hover:bg-gray-800">
+            <button
+                onClick={() => setShowChangePassword(true)} // Show the ChangePassword popup
+                className="bg-black text-white py-2 px-4 rounded mb-10 hover:bg-gray-800"
+            >
                 Change Password
             </button>
 
@@ -115,6 +120,11 @@ const SettingsPage = () => {
             >
                 Save
             </button>
+
+            {/* Change Password Popup */}
+            {showChangePassword && (
+                <ChangePassword onClose={() => setShowChangePassword(false)} />
+            )}
         </div>
     );
 };
