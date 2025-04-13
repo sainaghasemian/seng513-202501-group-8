@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import Base, SessionLocal, engine
-from models import Task, User
+from models import Task, User, Course
 from pydantic import BaseModel
+from datetime import datetime
+from dateutil.parser import parse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Firebase
@@ -21,7 +23,7 @@ app = FastAPI()
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  
+    allow_origins=["http://localhost:3000"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,9 +47,13 @@ def get_db():
     finally:
         db.close()
 
-# Pydantic Schemas
+# Schemas
 class TaskSchema(BaseModel):
     text: str
+    course: str
+    tag: str
+    deadline: str
+    due_date: str
     completed: bool = False
 
 class TaskOut(TaskSchema):
@@ -67,13 +73,34 @@ class UserUpdate(BaseModel):
     time_format: bool
     notifications: bool
 
+class CourseSchema(BaseModel):
+    name: str
+    color: str
+
+class CourseOut(CourseSchema):
+    id: int
+    class Config:
+        orm_mode = True
+
 # Routes
+@app.get("/courses", response_model=list[CourseOut])
+def get_courses(db: Session = Depends(get_db), user=Depends(verify_firebase_token)):
+    return db.query(Course).filter(Course.user_id == user["uid"]).all()
+
+@app.post("/courses", response_model=CourseOut)
+def add_course(course: CourseSchema, db: Session = Depends(get_db), user=Depends(verify_firebase_token)):
+    db_course = Course(name=course.name, color=course.color, user_id=user["uid"])
+    db.add(db_course)
+    db.commit()
+    db.refresh(db_course)
+    return db_course
+
 @app.get("/tasks", response_model=list[TaskOut])
 def get_tasks(
     db: Session = Depends(get_db),
-    user=Depends(verify_firebase_token)  
+    user=Depends(verify_firebase_token)
 ):
-    return db.query(Task).all()
+    return db.query(Task).filter(Task.user_id == user["uid"]).all()
 
 @app.post("/tasks", response_model=TaskOut)
 def create_task(
@@ -81,7 +108,15 @@ def create_task(
     db: Session = Depends(get_db),
     user=Depends(verify_firebase_token)
 ):
-    db_task = Task(text=task.text, completed=task.completed)
+    db_task = Task(
+        text=task.text,
+        course=task.course,
+        tag=task.tag,
+        deadline=task.deadline,
+        due_date=task.due_date,
+        completed=task.completed,
+        user_id=user["uid"]
+    )
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
@@ -153,6 +188,11 @@ def get_user_settings(
         "time_format": db_user.time_format,
         "notifications": db_user.notifications,
     }
+
+@app.get("/init-db")
+def init_db():
+    Base.metadata.create_all(bind=engine)
+    return {"message": "Tables created"}
 
 # Initialize DB
 Base.metadata.create_all(bind=engine)

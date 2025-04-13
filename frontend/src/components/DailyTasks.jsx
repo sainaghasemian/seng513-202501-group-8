@@ -12,14 +12,7 @@ export default function DailyTasks() {
     const [tag, setTag] = useState("");
     const [deadline, setDeadline] = useState("");
     const [dueDate, setDueDate] = useState("");
-    const handleAddCourse = () => {
-        // TODO: store and assign a color per new course
-        const newCourse = prompt("Enter course name:");
-        if (newCourse) {
-          alert(`"${newCourse}" was added! (Color auto-assignment to be implemented.)`);
-          // TODO: Store this in a `courses` state array in a real app
-        }
-      };
+    const [courses, setCourses] = useState([]);
 
     // Fetch tasks from backend
     useEffect(() => {
@@ -42,7 +35,23 @@ export default function DailyTasks() {
             }
         };
 
+        const fetchCourses = async () => {
+            try {
+                const idToken = await user.getIdToken();
+                const res = await fetch("http://localhost:8000/courses", {
+                    headers: {
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                });
+                const data = await res.json();
+                setCourses(data);
+            } catch (err) {
+                console.error("Failed to fetch courses:", err);
+            }
+        };
+
         fetchTasks();
+        fetchCourses();
     }, [user]);
 
     const toggleTask = async (id, currentState) => {
@@ -75,22 +84,62 @@ export default function DailyTasks() {
         }
     };
 
-    const handleAddTask = async () => {
-        if (!newTaskText.trim() || !user) return; // Ensure the user is authenticated
+    const handleAddCourse = async () => {
+        const newCourse = prompt("Enter course name:");
+        if (newCourse) {
+            const newColor = "#" + Math.floor(Math.random()*16777215).toString(16);
+            try {
+                const idToken = await user.getIdToken();
+                const res = await fetch("http://localhost:8000/courses", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify({ name: newCourse, color: newColor }),
+                });
+    
+                const created = await res.json();
+                setCourses(prev => [...prev, created]);
+            } catch (err) {
+                console.error("Failed to add course:", err);
+            }
+        }
+    };    
 
+    const handleAddTask = async () => {
+        if (!newTaskText.trim() || !user || !selectedCourse || !dueDate || !deadline) return;
+    
         try {
-            const idToken = await user.getIdToken(); // Get the Firebase ID token from the user object
+            const idToken = await user.getIdToken();
+    
+            const fullDeadline = new Date(`${dueDate}T${deadline}`).toISOString();
+    
             const res = await fetch("http://localhost:8000/tasks", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${idToken}`, // Include the token in the Authorization header
+                    Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ text: newTaskText, completed: false }),
+                body: JSON.stringify({
+                    text: newTaskText,
+                    course: selectedCourse,
+                    tag: tag,
+                    deadline: fullDeadline,  
+                    due_date: dueDate,
+                    completed: false,
+                }),
             });
+    
+            if (!res.ok) throw new Error("Failed to create task");
+    
             const newTask = await res.json();
             setTasks([...tasks, newTask]);
             setNewTaskText("");
+            setSelectedCourse("");
+            setTag("");
+            setDeadline("");
+            setDueDate("");
             setShowModal(false);
         } catch (err) {
             console.error("Error creating task:", err);
@@ -166,16 +215,16 @@ export default function DailyTasks() {
                     <div>
                         <label className="font-semibold block">Course</label>
                         <div className="flex flex-wrap gap-3 mt-1">
-                        {["ENEL 500", "ENSF 545", "SENG 513", "CPSC 481", "SENG 533"].map((course, idx) => (
-                            <label key={idx} className="flex items-center gap-1">
-                            <input
-                                type="radio"
-                                name="course"
-                                value={course}
-                                checked={selectedCourse === course}
-                                onChange={() => setSelectedCourse(course)}
-                            />
-                            {course}
+                        {courses.map((course) => (
+                            <label key={course.id} className="flex items-center gap-1">
+                                <input
+                                    type="radio"
+                                    name="course"
+                                    value={course.name}
+                                    checked={selectedCourse === course.name}
+                                    onChange={() => setSelectedCourse(course.name)}
+                                />
+                                <span style={{ color: course.color || "#333" }}>{course.name}</span>
                             </label>
                         ))}
                         <button onClick={handleAddCourse} className="text-blue-600 text-sm underline ml-2">+ Add Course</button>

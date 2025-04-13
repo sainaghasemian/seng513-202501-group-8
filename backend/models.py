@@ -1,12 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from database import Base
-
-class Task(Base):
-    __tablename__ = "tasks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    text = Column(String(255))
-    completed = Column(Boolean, default=False)
 
 class User(Base):
     __tablename__ = "users"
@@ -18,3 +12,29 @@ class User(Base):
     school = Column(String(255))
     time_format = Column(Boolean, default=True)  # True for 12H, False for 24H
     notifications = Column(Boolean, default=True)  # True for enabled, False for disabled
+    
+    tasks = relationship("Task", back_populates="user")
+    courses = relationship("Course", backref="user")
+
+    
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    text = Column(String(255))
+    course = Column(String(100))
+    tag = Column(String(100))
+    deadline = Column(DateTime)
+    due_date = Column(String(50))
+    completed = Column(Boolean, default=False)
+
+    user_id = Column(String(128), ForeignKey("users.uid"))
+    user = relationship("User", back_populates="tasks")
+
+class Course(Base):
+    __tablename__ = "courses"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False)
+    color = Column(String(7))  # hex color string like #abcdef
+
+    user_id = Column(String(128), ForeignKey("users.uid"))
+    user = relationship("User")
