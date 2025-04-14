@@ -13,6 +13,8 @@ export default function DailyTasks() {
     const [deadline, setDeadline] = useState("");
     const [dueDate, setDueDate] = useState("");
     const [courses, setCourses] = useState([]);
+    const [showCourseModal, setShowCourseModal] = useState(false);
+    const [newCourseName, setNewCourseName] = useState("");
 
     // Fetch tasks from backend
     useEffect(() => {
@@ -85,27 +87,27 @@ export default function DailyTasks() {
     };
 
     const handleAddCourse = async () => {
-        const newCourse = prompt("Enter course name:");
-        if (newCourse) {
-            const newColor = "#" + Math.floor(Math.random()*16777215).toString(16);
-            try {
-                const idToken = await user.getIdToken();
-                const res = await fetch("http://localhost:8000/courses", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${idToken}`,
-                    },
-                    body: JSON.stringify({ name: newCourse, color: newColor }),
-                });
+        if (!newCourseName.trim()) return;
+        const newColor = "#" + Math.floor(Math.random() * 16777215).toString(16);
+        try {
+            const idToken = await user.getIdToken();
+            const res = await fetch("http://localhost:8000/courses", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ name: newCourseName, color: newColor }),
+            });
     
-                const created = await res.json();
-                setCourses(prev => [...prev, created]);
-            } catch (err) {
-                console.error("Failed to add course:", err);
-            }
+            const created = await res.json();
+            setCourses(prev => [...prev, created]);
+            setNewCourseName("");
+            setShowCourseModal(false);
+        } catch (err) {
+            console.error("Failed to add course:", err);
         }
-    };    
+    }    
 
     const handleAddTask = async () => {
         if (!newTaskText.trim() || !user || !selectedCourse || !dueDate || !deadline) return;
@@ -227,7 +229,13 @@ export default function DailyTasks() {
                                 <span style={{ color: course.color || "#333" }}>{course.name}</span>
                             </label>
                         ))}
-                        <button onClick={handleAddCourse} className="text-blue-600 text-sm underline ml-2">+ Add Course</button>
+                        <button
+                        type="button"
+                        onClick={() => setShowCourseModal(true)}
+                        className="text-blue-600 text-sm underline ml-2"
+                        >
+                        + Add Course
+                        </button>
                         </div>
                     </div>
 
@@ -280,6 +288,34 @@ export default function DailyTasks() {
                         className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700"
                         >
                         Add Task
+                        </button>
+                    </div>
+                    </div>
+                </div>
+                )}
+            {showCourseModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-lg space-y-4">
+                    <h3 className="text-xl font-semibold text-center">Add Course</h3>
+                    <input
+                        type="text"
+                        value={newCourseName}
+                        onChange={(e) => setNewCourseName(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2"
+                        placeholder="Enter course name"
+                    />
+                    <div className="flex justify-end gap-2">
+                        <button
+                        onClick={() => setShowCourseModal(false)}
+                        className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                        >
+                        Cancel
+                        </button>
+                        <button
+                        onClick={handleAddCourse}
+                        className="px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                        Add
                         </button>
                     </div>
                     </div>

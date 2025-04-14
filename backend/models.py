@@ -14,7 +14,7 @@ class User(Base):
     notifications = Column(Boolean, default=True)  # True for enabled, False for disabled
     
     tasks = relationship("Task", back_populates="user")
-    courses = relationship("Course", backref="user")
+    courses = relationship("Course", back_populates="user")
 
     
 class Task(Base):
@@ -37,4 +37,4 @@ class Course(Base):
     color = Column(String(7))  # hex color string like #abcdef
 
     user_id = Column(String(128), ForeignKey("users.uid"))
-    user = relationship("User")
+    user = relationship("User", back_populates="courses")

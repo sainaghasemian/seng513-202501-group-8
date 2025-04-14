@@ -107,20 +107,37 @@ def create_task(
     task: TaskSchema,
     db: Session = Depends(get_db),
     user=Depends(verify_firebase_token)
-):
-    db_task = Task(
-        text=task.text,
-        course=task.course,
-        tag=task.tag,
-        deadline=task.deadline,
-        due_date=task.due_date,
-        completed=task.completed,
-        user_id=user["uid"]
-    )
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    return db_task
+):    
+    try:
+        parsed_deadline = datetime.fromisoformat(task.deadline.replace("Z", "")) \
+                         if task.deadline else None
+
+        db_task = Task(
+            text      = task.text,
+            course    = task.course,
+            tag       = task.tag,
+            deadline  = parsed_deadline,
+            due_date  = task.due_date,
+            completed = task.completed,
+            user_id   = user["uid"],
+        )
+        db.add(db_task)
+        db.commit()
+        db.refresh(db_task)
+
+        return {
+            "id"       : db_task.id,
+            "text"     : db_task.text,
+            "course"   : db_task.course,
+            "tag"      : db_task.tag,
+            "deadline" : db_task.deadline.isoformat() if db_task.deadline else None,
+            "due_date" : db_task.due_date,
+            "completed": db_task.completed,
+        }
+    except Exception as e:
+        print("Error creating task:", e)
+        raise HTTPException(status_code=500, detail="Task creation failed")
+
 
 @app.patch("/tasks/{task_id}", response_model=dict)
 def update_task(
