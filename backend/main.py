@@ -52,7 +52,7 @@ class TaskSchema(BaseModel):
     text: str
     course: str
     tag: str
-    deadline: str
+    deadline: datetime
     due_date: str
     completed: bool = False
 
@@ -109,8 +109,10 @@ def create_task(
     user=Depends(verify_firebase_token)
 ):    
     try:
-        parsed_deadline = datetime.fromisoformat(task.deadline.replace("Z", "")) \
-                         if task.deadline else None
+        parsed_deadline = (
+        datetime.fromisoformat(task.deadline.replace("Z", ""))
+        if isinstance(task.deadline, str) else task.deadline
+    )
 
         db_task = Task(
             text      = task.text,
@@ -125,15 +127,7 @@ def create_task(
         db.commit()
         db.refresh(db_task)
 
-        return {
-            "id"       : db_task.id,
-            "text"     : db_task.text,
-            "course"   : db_task.course,
-            "tag"      : db_task.tag,
-            "deadline" : db_task.deadline.isoformat() if db_task.deadline else None,
-            "due_date" : db_task.due_date,
-            "completed": db_task.completed,
-        }
+        return db_task
     except Exception as e:
         print("Error creating task:", e)
         raise HTTPException(status_code=500, detail="Task creation failed")

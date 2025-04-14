@@ -1,40 +1,146 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext'; // Import the AuthContext
+import TaskModal from '../components/TaskModal';
 
-// Sample deadline data
-// TO DO: change these
-const deadlines = [
-    { course: 'CPSC 481', task: 'Submit Lab 1 Report', date: '2025-02-24' },
-    { course: 'ENEL 500', task: 'Finalize Wireframes', date: '2025-02-24' },
-    { course: 'ENSF 545', task: 'Research Summary Review', date: '2025-02-24' },
-    { course: 'ENSF 545', task: 'Draft Presentation Slides', date: '2025-02-25' },
-    { course: 'CPSC 481', task: 'Assignment 2', date: '2025-02-26' },
-    { course: 'ENSF 545', task: 'Detailed Project Proposal', date: '2025-02-27' },
-    { course: 'ENEL 500', task: 'Submit Technical Report', date: '2025-02-27' },
-    { course: 'ENSF 545', task: 'Finalize Research Plan', date: '2025-03-01' },
-    { course: 'CPSC 481', task: 'Peer Review Feedback', date: '2025-03-02' },
-];
-
-const courseList = ['ENEL 500', 'ENSF 545', 'SENG 513', 'CPSC 481', 'SENG 533'];
 
 const FutureDueDatesPage = () => {
-    const [selectedCourses, setSelectedCourses] = useState(['ENEL 500', 'ENSF 545', 'CPSC 481']);
-    const [checkedTasks, setCheckedTasks] = useState([]);
-    const { user, loading } = useAuth(); // Access user and loading state from AuthContext
+    // Get data from API
+    const [deadlines,      setDeadlines]   = useState([]);
+    const [courseList,     setCourseList]  = useState([]);
+    const [selectedCourses,setSelectedCourses] = useState([]);
+    const [checkedTasks,   setCheckedTasks] = useState([]);
+
+    // Logic for add deadline button
+    const [showModal,       setShowModal]       = useState(false);
+    const [newTaskText,     setNewTaskText]     = useState('');
+    const [selectedCourse,  setSelectedCourse]  = useState('');
+    const [tag,             setTag]             = useState('');
+    const [deadline,        setDeadline]        = useState('');
+    const [dueDate,         setDueDate]         = useState('');
+    const [showCourseModal, setShowCourseModal] = useState(false);
+    const [newCourseName,   setNewCourseName]   = useState('');
+
+    const { user, loading } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-            if (!loading && !user) {
-                navigate('/'); // Redirect to login if not authenticated
+        if (!loading && !user) navigate('/');
+    }, [user, loading, navigate]);
+
+    // Fetch courses and deadlines
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchData = async () => {
+            try {
+                const idToken = await user.getIdToken();
+
+                const courseRes = await fetch('http://localhost:8000/courses', {
+                    headers: { Authorization: `Bearer ${idToken}` },
+                });
+                const courses = await courseRes.json();
+                setCourseList(courses.map(c => c.name));
+                setSelectedCourses(courses.map(c => c.name));
+
+                const taskRes = await fetch('http://localhost:8000/tasks', {
+                    headers: { Authorization: `Bearer ${idToken}` },
+                });
+                const tasks = await taskRes.json();
+                setDeadlines(
+                    tasks.map(t => ({
+                        course : t.course,
+                        task   : t.text,
+                        date   : t.due_date,
+                        id     : t.id,
+                    }))
+                );
+            } catch (err) {
+                console.error('Failed to load due‑date data:', err);
             }
-        }, [user, loading, navigate]);
+        };
+        fetchData();
+    }, [user]);
 
-    const today = new Date().toISOString().split('T')[0];
+    const handleAddCourse = async () => {
+    if (!newCourseName.trim()) return;
 
-    const isDueToday = (date) => date === today;
+    const newColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+
+    try {
+        const idToken = await user.getIdToken();
+        const res = await fetch('http://localhost:8000/courses', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ name: newCourseName, color: newColor }),
+        });
+
+        const created = await res.json();
+
+        setCourseList(prev => [...prev, created.name]);
+        setSelectedCourses(prev => [...prev, created.name]); 
+
+        setNewCourseName('');
+        setShowCourseModal(false);
+    } catch (err) {
+        console.error('Failed to add course:', err);
+    }
+    };
+
+    const handleAddTask = async () => {
+    if (!newTaskText.trim() || !selectedCourse || !dueDate || !deadline) return;
+
+    try {
+        const idToken = await user.getIdToken();
+        const fullDeadline = new Date(`${dueDate}T${deadline}`).toISOString();
+
+        const res = await fetch('http://localhost:8000/tasks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+            text: newTaskText,
+            course: selectedCourse,
+            tag,
+            deadline: fullDeadline,
+            due_date: dueDate,
+            completed: false,
+        }),
+        });
+
+        if (!res.ok) throw new Error('Failed to create task');
+
+        const newTask = await res.json();
+
+        setDeadlines(prev => [
+        ...prev,
+        { id: newTask.id, course: newTask.course, task: newTask.text, date: newTask.due_date },
+        ]);
+
+        setNewTaskText('');
+        setSelectedCourse('');
+        setTag('');
+        setDeadline('');
+        setDueDate('');
+        setShowModal(false);
+    } catch (err) {
+        console.error('Error creating task:', err);
+    }
+    };
+
+    // Always just use midnight when figuring out what to display so we still display
+    // deadlines from a few hours ago
+    const todayStr = new Date().toISOString().split('T')[0];
+    const toMidnight = d => new Date(`${d}T00:00:00`);
+
+    const isDueToday = (date) => toMidnight(date).getTime() === toMidnight(todayStr).getTime();
     const isDueSoon = (date) => {
-        const diff = (new Date(date) - new Date(today)) / (1000 * 60 * 60 * 24);
+        const diff = (toMidnight(date) - toMidnight(todayStr)) / (1000 * 60 * 60 * 24);
         return diff > 0 && diff <= 7;
     };
 
@@ -118,11 +224,27 @@ const FutureDueDatesPage = () => {
                 ) : (
                     <p className="text-gray-500">No upcoming tasks.</p>
                 )}
-
-                <button className="mt-6 bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800">
+                <button
+                    className="mt-6 bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
+                    onClick={() => setShowModal(true)}
+                    >
                     Add Deadline
                 </button>
             </div>
+            <TaskModal
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                onSubmit={handleAddTask}
+                courses={courseList.map(name => ({ name }))}
+                {...{ newTaskText, setNewTaskText,
+                        selectedCourse, setSelectedCourse,
+                        tag, setTag,
+                        deadline, setDeadline,
+                        dueDate, setDueDate,
+                        showCourseModal, setShowCourseModal,
+                        newCourseName, setNewCourseName,
+                        handleAddCourse }}
+                />
         </div>
     );
 };
