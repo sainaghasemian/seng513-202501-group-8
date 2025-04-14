@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import Base, SessionLocal, engine
-from models import Task, User, Course
+from models import Task, User, Course, ShareToken
 from pydantic import BaseModel
 from datetime import datetime
 from dateutil.parser import parse
 from fastapi.middleware.cors import CORSMiddleware
+import secrets, json
 
 # Firebase
 import firebase_admin
@@ -199,6 +200,47 @@ def get_user_settings(
         "time_format": db_user.time_format,
         "notifications": db_user.notifications,
     }
+
+# Create share link
+@app.post("/share-schedule")
+def share_schedule(
+    body: dict = Body(...),             # expects {"courses": [..]}
+    db: Session = Depends(get_db),
+    user = Depends(verify_firebase_token)
+):
+    if "courses" not in body or not isinstance(body["courses"], list):
+        raise HTTPException(400, detail="courses must be a list")
+
+    token = secrets.token_urlsafe(16)
+    db_token = ShareToken(
+        token     = token,
+        owner_uid = user["uid"],
+        courses   = json.dumps(body["courses"])
+    )
+    db.add(db_token)
+    db.commit()
+    return { "token": token }
+
+@app.get("/shared/{token}")
+def get_shared_calendar(token: str, db: Session = Depends(get_db)):
+    tok = db.query(ShareToken).filter_by(token=token).first()
+    if not tok:
+        raise HTTPException(404, detail="Link not found")
+
+    # pull all tasks that belong to owner & match the allowed courses
+    allowed = json.loads(tok.courses)
+    tasks = (
+        db.query(Task)
+        .filter(Task.user_id == tok.owner_uid, Task.course.in_(allowed))
+        .all()
+    )
+    return [
+        {
+            "title": t.text,
+            "date" : t.due_date   # FullCalendar accepts YYYY-MM-DD
+        }
+        for t in tasks
+    ]
 
 @app.get("/init-db")
 def init_db():

@@ -11,6 +11,7 @@ import StudyBuddyPage from "./pages/StudyBuddyPage";
 import FutureDueDatesPage from "./pages/FutureDueDatesPage"; 
 import SettingsPage from "./pages/SettingsPage";
 import MainPage from "./pages/MainPage";
+import ViewSchedulePage from "./pages/ViewSchedulePage";
 
 function App() {
   return (
@@ -51,6 +52,10 @@ function App() {
                 <SettingsPage />
               </Layout>
             }
+          />
+          <Route
+            path="/view-schedule/:token"
+            element={<ViewSchedulePage />}
           />
         </Routes>
       </div>
