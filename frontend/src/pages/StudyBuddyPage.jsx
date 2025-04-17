@@ -114,7 +114,10 @@ const StudyBuddyPage = () => {
           <h3 className="text-lg font-medium mb-2">Courses</h3>
           {courses.map((c) => (
             <div key={c.id} className="mb-2">
-              <label className="inline-flex items-center">
+              <label
+                className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white shadow-md"
+                style={{ backgroundColor: c.color || "#666666" }}
+              >
                 <input
                   type="checkbox"
                   className="mr-2 accent-purple-500"
@@ -141,13 +144,20 @@ const StudyBuddyPage = () => {
         )}
       </div>
 
-      {/* Right column: */}
+      {/* Right column */}
       <div className="w-full md:w-2/3">
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           height="auto"
-          events={calendarEvents}
+          events={calendarEvents.map((event) => {
+            const courseColor = courses.find((c) => c.name === event.extendedProps.course)?.color || "#000";
+            return {
+              ...event,
+              backgroundColor: courseColor,
+              borderColor: courseColor,
+            };
+          })}
         />
       </div>
     </div>

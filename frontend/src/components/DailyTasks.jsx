@@ -137,25 +137,28 @@ export default function DailyTasks({
             
             {tasksDueToday.length > 0 ? (
                 <ul className="space-y-3 mb-6">
-                    {tasksDueToday.map((task) => (
-                        <li key={task.id} className="flex items-start gap-2">
-                            <input
-                                type="checkbox"
-                                checked={task.completed}
-                                onChange={() => toggleTask(task.id, task.completed)}
-                                className="accent-purple-500 mt-1"
-                            />
-                            <span
-                                className={`text-sm ${
-                                    task.completed 
-                                        ? "line-through text-gray-400" 
-                                        : "text-gray-800"
-                                }`}
-                            >
-                                <strong>{task.course}</strong>: {task.text}
-                            </span>
-                        </li>
-                    ))}
+                    {tasksDueToday.map((task) => {
+                        const courseColor = courses.find((c) => c.name === task.course)?.color || '#000';
+                        return (
+                            <li key={task.id} className="flex items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={task.completed}
+                                    onChange={() => toggleTask(task.id, task.completed)}
+                                    className="accent-purple-500 mt-1"
+                                />
+                                <span
+                                    className={`text-sm ${
+                                        task.completed 
+                                            ? "line-through text-gray-400" 
+                                            : "text-gray-800"
+                                    }`}
+                                >
+                                    <strong style={{ color: courseColor }}>{task.course}</strong>: {task.text}
+                                </span>
+                            </li>
+                        );
+                    })}
                 </ul>
             ) : (
                 <p className="text-gray-400">No tasks due today 🎉</p>

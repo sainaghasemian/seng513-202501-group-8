@@ -12,6 +12,7 @@ const MainPage = () => {
     const [tasks, setTasks] = useState([]);
     const [courses, setCourses] = useState([]);
     const [selectedCourses, setSelectedCourses] = useState([]);
+    const [showColorModal, setShowColorModal] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -46,17 +47,24 @@ const MainPage = () => {
         fetchData();
     }, [user]);
 
-    const calendarEvents = useMemo(
-        () =>
-            tasks
-                .filter((t) => selectedCourses.includes(t.course))
-                .map((t) => ({
+    // Attach the course color to each calendar event
+    const calendarEvents = useMemo(() => {
+        return tasks
+            .filter((t) => selectedCourses.includes(t.course))
+            .map((t) => {
+                const thisCourse = courses.find((c) => c.name === t.course);
+                return {
                     title: t.text,
                     date: t.due_date,
-                    extendedProps: { course: t.course, tag: t.tag },
-                })),
-        [tasks, selectedCourses]
-    );
+                    backgroundColor: thisCourse?.color || '#cccccc',
+                    borderColor: thisCourse?.color || '#cccccc',
+                    extendedProps: {
+                        course: t.course,
+                        tag: t.tag,
+                    },
+                };
+            });
+    }, [tasks, selectedCourses, courses]);
 
     const completed = tasks.filter((t) => t.completed).length;
     const total = tasks.length;
@@ -71,6 +79,35 @@ const MainPage = () => {
     if (loading) {
         return <p className="text-sm text-gray-400">Loading...</p>;
     }
+
+    // Simple modal to show course colors
+    const CourseColorsModal = ({ show, onClose, courses }) => {
+        if (!show) return null;
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-4 rounded-md shadow w-80">
+                    <h3 className="text-xl font-bold mb-2">Course Colors</h3>
+                    <ul className="space-y-2">
+                        {courses.map((course) => (
+                            <li key={course.id} className="flex items-center gap-2">
+                                <span
+                                    className="inline-block w-4 h-4 rounded"
+                                    style={{ backgroundColor: course.color }}
+                                ></span>
+                                <span>{course.name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                    <button
+                        onClick={onClose}
+                        className="mt-4 bg-black text-white px-3 py-1 rounded"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="pt-[4rem] px-4 flex flex-col md:flex-row gap-4">
@@ -89,7 +126,13 @@ const MainPage = () => {
                         <ul className="list-disc list-inside">
                             {upcomingTasks.map((task) => (
                                 <li key={task.id} className="mb-1">
-                                    <span className="font-semibold">{task.course}</span>: {task.text}
+                                    <span
+                                        className="font-semibold"
+                                        style={{ color: courses.find((c) => c.name === task.course)?.color || '#000' }}
+                                    >
+                                        {task.course}
+                                    </span>
+                                    : {task.text}
                                     {task.due_date && (
                                         <span className="ml-2 text-sm text-gray-600">
                                             Due{" "}
@@ -113,7 +156,8 @@ const MainPage = () => {
                     {courses.map((c) => (
                         <label
                             key={c.id}
-                            className="inline-flex items-center cursor-pointer"
+                            className="inline-flex items-center cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold text-white shadow-md"
+                            style={{ backgroundColor: c.color || "#666666" }}
                         >
                             <input
                                 type="checkbox"
@@ -127,7 +171,7 @@ const MainPage = () => {
                                     )
                                 }
                             />
-                            <span className="text-sm">{c.name}</span>
+                            {c.name}
                         </label>
                     ))}
                 </div>
@@ -143,6 +187,12 @@ const MainPage = () => {
                     setCourses={setCourses}
                 />
             </div>
+
+            <CourseColorsModal
+                show={showColorModal}
+                onClose={() => setShowColorModal(false)}
+                courses={courses}
+            />
         </div>
     );
 };

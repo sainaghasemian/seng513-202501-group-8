@@ -38,15 +38,14 @@ const FutureDueDatesPage = () => {
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
                 const courses = await courseRes.json();
-                setCourseList(courses.map((c) => c.name));
-                setSelectedCourses(courses.map((c) => c.name));
+                setCourseList(courses); // Store full course objects (name and color)
+                setSelectedCourses(courses.map((c) => c.name)); // Initialize selected courses with all course names
 
                 // Fetch tasks
                 const taskRes = await fetch('http://localhost:8000/tasks', {
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
                 const tasks = await taskRes.json();
-                // Store "completed" so we can style or patch them later
                 setDeadlines(
                     tasks.map((t) => ({
                         id: t.id,
@@ -189,15 +188,18 @@ const FutureDueDatesPage = () => {
             <div className="w-full md:w-1/3">
                 <h2 className="text-xl font-semibold mb-4">Courses</h2>
                 {courseList.map((course) => (
-                    <div key={course} className="mb-2">
-                        <label className="inline-flex items-center">
+                    <div key={course.name} className="mb-2">
+                        <label
+                            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white shadow-md"
+                            style={{ backgroundColor: course.color || "#666666" }}
+                        >
                             <input
                                 type="checkbox"
-                                className="mr-2 accent-purple-500 mt-1"
-                                checked={selectedCourses.includes(course)}
-                                onChange={() => toggleCourse(course)}
+                                className="mr-2 accent-purple-500"
+                                checked={selectedCourses.includes(course.name)}
+                                onChange={() => toggleCourse(course.name)}
                             />
-                            {course}
+                            {course.name}
                         </label>
                     </div>
                 ))}
@@ -207,61 +209,67 @@ const FutureDueDatesPage = () => {
             <div className="w-full md:w-2/3">
                 <h2 className="text-2xl font-bold mb-4">Due Today</h2>
                 {dueToday.length ? (
-                    dueToday.map((d) => (
-                        <div key={d.id} className="mb-2">
-                            <label className="inline-flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="mr-2 accent-purple-500 mt-1"
-                                    checked={d.completed}
-                                    onChange={() => toggleTask(d.id, d.completed)}
-                                />
-                                <span
-                                    className={`text-sm ${
-                                        d.completed
-                                            ? 'line-through text-gray-400'
-                                            : 'text-gray-800'
-                                    }`}
-                                >
-                                    <strong>{d.course}</strong>: {d.task}
-                                </span>
-                            </label>
-                        </div>
-                    ))
+                    dueToday.map((d) => {
+                        const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
+                        return (
+                            <div key={d.id} className="mb-2">
+                                <label className="inline-flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2 accent-purple-500 mt-1"
+                                        checked={d.completed}
+                                        onChange={() => toggleTask(d.id, d.completed)}
+                                    />
+                                    <span
+                                        className={`text-sm ${
+                                            d.completed
+                                                ? "line-through text-gray-400"
+                                                : "text-gray-800"
+                                        }`}
+                                    >
+                                        <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
+                                    </span>
+                                </label>
+                            </div>
+                        );
+                    })
                 ) : (
                     <p className="text-gray-500 mb-6">No tasks due today.</p>
                 )}
 
                 <h2 className="text-2xl font-bold mt-6 mb-4">Due Soon</h2>
                 {dueSoon.length ? (
-                    dueSoon.map((d) => (
-                        <div key={d.id} className="mb-2">
-                            <label className="inline-flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="mr-2 accent-purple-500 mt-1"
-                                    checked={d.completed}
-                                    onChange={() => toggleTask(d.id, d.completed)}
-                                />
-                                <span
-                                    className={`text-sm ${
-                                        d.completed
-                                            ? 'line-through text-gray-400'
-                                            : 'text-gray-800'
-                                    }`}
-                                >
-                                    <strong>{d.course}</strong>: {d.task}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                    &nbsp;Due&nbsp;
-                                    {new Date(d.date).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                    })}
-                                </span>
-                            </label>
-                        </div>
-                    ))
+                    dueSoon.map((d) => {
+                        const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
+                        return (
+                            <div key={d.id} className="mb-2">
+                                <label className="inline-flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2 accent-purple-500 mt-1"
+                                        checked={d.completed}
+                                        onChange={() => toggleTask(d.id, d.completed)}
+                                    />
+                                    <span
+                                        className={`text-sm ${
+                                            d.completed
+                                                ? "line-through text-gray-400"
+                                                : "text-gray-800"
+                                        }`}
+                                    >
+                                        <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
+                                    </span>
+                                    <span className="text-sm text-gray-500 ml-2">
+                                        &nbsp;Due&nbsp;
+                                        {new Date(d.date).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                    </span>
+                                </label>
+                            </div>
+                        );
+                    })
                 ) : (
                     <p className="text-gray-500">No upcoming tasks.</p>
                 )}

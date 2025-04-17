@@ -227,20 +227,33 @@ def get_shared_calendar(token: str, db: Session = Depends(get_db)):
     if not tok:
         raise HTTPException(404, detail="Link not found")
 
-    # pull all tasks that belong to owner & match the allowed courses
+    # Pull all tasks that belong to owner & match the allowed courses
     allowed = json.loads(tok.courses)
     tasks = (
         db.query(Task)
         .filter(Task.user_id == tok.owner_uid, Task.course.in_(allowed))
         .all()
     )
-    return [
-        {
-            "title": t.text,
-            "date" : t.due_date   # FullCalendar accepts YYYY-MM-DD
-        }
-        for t in tasks
-    ]
+    courses = (
+        db.query(Course)
+        .filter(Course.user_id == tok.owner_uid, Course.name.in_(allowed))
+        .all()
+    )
+    user = db.query(User).filter(User.uid == tok.owner_uid).first()
+    course_colors = {course.name: course.color for course in courses}
+
+    return {
+        "ownerName": f"{user.first_name} {user.last_name}" if user else "User",
+        "events": [
+            {
+                "title": t.text,
+                "date": t.due_date,  # FullCalendar accepts YYYY-MM-DD
+                "course": t.course,
+                "color": course_colors.get(t.course, "#000"),
+            }
+            for t in tasks
+        ],
+    }
 
 @app.get("/init-db")
 def init_db():
