@@ -117,7 +117,7 @@ const StudyBuddyPage = () => {
               <label className="inline-flex items-center">
                 <input
                   type="checkbox"
-                  className="mr-2"
+                  className="mr-2 accent-purple-500"
                   checked={selectedCourses.includes(c.name)}
                   onChange={() => handleCourseChange(c.name)}
                 />
