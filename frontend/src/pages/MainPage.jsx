@@ -4,6 +4,7 @@ import { useAuth } from '../components/AuthContext';
 import DailyTasks from '../components/DailyTasks';
 import Calendar from '../components/Calendar';
 import CompletionBar from '../components/CompletionBar';
+import EditTaskModal from '../components/EditTaskModal'; // Import the EditTaskModal
 
 const MainPage = () => {
     const { user, loading } = useAuth();
@@ -13,6 +14,9 @@ const MainPage = () => {
     const [courses, setCourses] = useState([]);
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [showColorModal, setShowColorModal] = useState(false);
+
+    const [showEditModal, setShowEditModal] = useState(false); // State for EditTaskModal
+    const [taskToEdit, setTaskToEdit] = useState(null); // Task to edit
 
     useEffect(() => {
         if (!loading && !user) {
@@ -125,9 +129,13 @@ const MainPage = () => {
                     {upcomingTasks.length > 0 ? (
                         <ul className="list-disc list-inside">
                             {upcomingTasks.map((task) => (
-                                <li key={task.id} className="mb-1">
+                                <li key={task.id} className="mb-1" onClick={() => {
+                                    setTaskToEdit(task);
+                                    setShowEditModal(true);
+                                }}>
                                     <span
-                                        className="font-semibold"
+                                        
+                                        className="font-semibold cursor-pointer"
                                         style={{ color: courses.find((c) => c.name === task.course)?.color || '#000' }}
                                     >
                                         {task.course}
@@ -136,7 +144,7 @@ const MainPage = () => {
                                     {task.due_date && (
                                         <span className="ml-2 text-sm text-gray-600">
                                             Due{" "}
-                                            {new Date(task.due_date).toLocaleDateString("en-US", {
+                                            {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", {
                                                 month: "short",
                                                 day: "numeric",
                                             })}
@@ -192,6 +200,16 @@ const MainPage = () => {
                 show={showColorModal}
                 onClose={() => setShowColorModal(false)}
                 courses={courses}
+            />
+
+            {/* Edit Task Modal */}
+            <EditTaskModal
+                show={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                task={taskToEdit}
+                setTasks={setTasks}
+                courses={courses}
+                user={user}
             />
         </div>
     );

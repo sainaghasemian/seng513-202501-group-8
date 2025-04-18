@@ -65,6 +65,14 @@ class TaskOut(TaskSchema):
 class TaskUpdate(BaseModel):
     completed: bool
 
+class TaskUpdateFull(BaseModel):
+    text: str
+    course: str
+    tag: str
+    deadline: datetime
+    due_date: str
+    completed: bool
+
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
@@ -137,17 +145,47 @@ def create_task(
 @app.patch("/tasks/{task_id}", response_model=dict)
 def update_task(
     task_id: int,
-    task_data: TaskUpdate,
+    update_data: TaskUpdateFull,  # Updated schema to match all fields
     db: Session = Depends(get_db),
-    user=Depends(verify_firebase_token)
+    user=Depends(verify_firebase_token),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
+    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == user["uid"]).first()
+    if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
-    task.completed = task_data.completed
+
+    db_task.text = update_data.text
+    db_task.course = update_data.course
+    db_task.tag = update_data.tag
+    db_task.deadline = update_data.deadline
+    db_task.due_date = update_data.due_date
+    db_task.completed = update_data.completed
+
     db.commit()
-    db.refresh(task)
-    return {"id": task.id, "text": task.text, "completed": task.completed}
+    db.refresh(db_task)
+
+    return {
+        "id": db_task.id,
+        "text": db_task.text,
+        "course": db_task.course,
+        "tag": db_task.tag,
+        "deadline": db_task.deadline,
+        "due_date": db_task.due_date,
+        "completed": db_task.completed,
+    }
+
+@app.delete("/tasks/{task_id}")
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(verify_firebase_token),
+):
+    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == user["uid"]).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    db.delete(db_task)
+    db.commit()
+    return {"message": "Task deleted successfully"}
 
 @app.post("/users")
 def create_user(

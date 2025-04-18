@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext'; 
 import TaskModal from '../components/TaskModal';
+import EditTaskModal from '../components/EditTaskModal'; // Import the edit modal
 
 const FutureDueDatesPage = () => {
     const [deadlines, setDeadlines] = useState([]);
     const [courseList, setCourseList] = useState([]);
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false); // For editing tasks
+    const [taskToEdit, setTaskToEdit] = useState(null); // Task being edited
     const [newTaskText, setNewTaskText] = useState('');
     const [selectedCourse, setSelectedCourse] = useState('');
     const [tag, setTag] = useState('');
@@ -131,28 +134,65 @@ const FutureDueDatesPage = () => {
         }
     };
 
-    // PATCH the task just like in DailyTasks
-    const toggleTask = async (taskId, currentState) => {
+    const toggleTask = async (id, currentState) => {
         if (!user) return;
-        const updated = !currentState;
+
+        // Find the task to update
+        const taskToUpdate = deadlines.find((task) => task.id === id);
+        if (!taskToUpdate) {
+            console.error("Task not found");
+            return;
+        }
+
+        // Prepare the updated task data
+        const updatedTask = {
+            text: taskToUpdate.task, // Use the existing task name
+            course: taskToUpdate.course, // Use the existing course
+            tag: taskToUpdate.tag || "", // Use the existing tag or default to an empty string
+            deadline: taskToUpdate.deadline || new Date().toISOString(), // Use the existing deadline
+            due_date: taskToUpdate.date, // Use the existing due date
+            completed: !currentState, // Toggle the completed state
+        };
+
         try {
             const idToken = await user.getIdToken();
-            const res = await fetch(`http://localhost:8000/tasks/${taskId}`, {
-                method: 'PATCH',
+            const res = await fetch(`http://localhost:8000/tasks/${id}`, {
+                method: "PATCH",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ completed: updated }),
+                body: JSON.stringify(updatedTask), // Send the full task data
             });
-            if (!res.ok) throw new Error('Failed to update task');
-            // Update local state
-            setDeadlines((prev) =>
-                prev.map((d) => (d.id === taskId ? { ...d, completed: updated } : d))
-            );
+
+            if (res.ok) {
+                // Update the local state with the new completed value
+                setDeadlines((prev) =>
+                    prev.map((task) =>
+                        task.id === id ? { ...task, completed: updatedTask.completed } : task
+                    )
+                );
+            } else {
+                console.error("Failed to update task:", await res.text());
+            }
         } catch (err) {
-            console.error('Error updating task:', err);
+            console.error("Error updating task:", err);
         }
+    };
+
+    const handleEditTask = (task) => {
+        // Map the task object to include all required fields for the modal
+        const taskForEdit = {
+            id: task.id,
+            text: task.task, // Map 'task' to 'text'
+            course: task.course,
+            tag: task.tag || "", // Default to an empty string if 'tag' is missing
+            deadline: task.date, // Use 'date' as the deadline
+            due_date: task.date, // Use 'date' as the due_date
+            completed: task.completed,
+        };
+        setTaskToEdit(taskForEdit);
+        setShowEditModal(true);
     };
 
     const todayStr = new Date().toISOString().split('T')[0];
@@ -171,7 +211,6 @@ const FutureDueDatesPage = () => {
         );
     };
 
-    // Filter deadlines to show only selected courses
     const filteredDeadlines = deadlines.filter((d) =>
         selectedCourses.includes(d.course)
     );
@@ -212,24 +251,26 @@ const FutureDueDatesPage = () => {
                     dueToday.map((d) => {
                         const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
                         return (
-                            <div key={d.id} className="mb-2">
-                                <label className="inline-flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2 accent-purple-500 mt-1"
-                                        checked={d.completed}
-                                        onChange={() => toggleTask(d.id, d.completed)}
-                                    />
-                                    <span
-                                        className={`text-sm ${
-                                            d.completed
-                                                ? "line-through text-gray-400"
-                                                : "text-gray-800"
-                                        }`}
-                                    >
-                                        <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
-                                    </span>
-                                </label>
+                            <div key={d.id} className="mb-2 flex items-center gap-2">
+                                {/* Checkbox */}
+                                <input
+                                    type="checkbox"
+                                    checked={d.completed}
+                                    onChange={() => toggleTask(d.id, d.completed)} // Use the updated toggleTask function
+                                    className="accent-purple-500 mt-1"
+                                />
+
+                                {/* Task Text */}
+                                <span
+                                    onClick={() => handleEditTask(d)} // Open edit modal
+                                    className={`text-sm cursor-pointer ${
+                                        d.completed
+                                            ? "line-through text-gray-400"
+                                            : "text-gray-800"
+                                    }`}
+                                >
+                                    <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
+                                </span>
                             </div>
                         );
                     })
@@ -242,31 +283,33 @@ const FutureDueDatesPage = () => {
                     dueSoon.map((d) => {
                         const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
                         return (
-                            <div key={d.id} className="mb-2">
-                                <label className="inline-flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2 accent-purple-500 mt-1"
-                                        checked={d.completed}
-                                        onChange={() => toggleTask(d.id, d.completed)}
-                                    />
-                                    <span
-                                        className={`text-sm ${
-                                            d.completed
-                                                ? "line-through text-gray-400"
-                                                : "text-gray-800"
-                                        }`}
-                                    >
-                                        <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
-                                    </span>
-                                    <span className="text-sm text-gray-500 ml-2">
-                                        &nbsp;Due&nbsp;
-                                        {new Date(d.date).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                        })}
-                                    </span>
-                                </label>
+                            <div key={d.id} className="mb-2 flex items-center gap-2">
+                                {/* Checkbox */}
+                                <input
+                                    type="checkbox"
+                                    checked={d.completed}
+                                    onChange={() => toggleTask(d.id, d.completed)} // Use the updated toggleTask function
+                                    className="accent-purple-500 mt-1"
+                                />
+
+                                {/* Task Text */}
+                                <span
+                                    onClick={() => handleEditTask(d)} // Open edit modal
+                                    className={`text-sm cursor-pointer ${
+                                        d.completed
+                                            ? "line-through text-gray-400"
+                                            : "text-gray-800"
+                                    }`}
+                                >
+                                    <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
+                                </span>
+                                <span className="text-sm text-gray-500 ml-2">
+                                    &nbsp;Due&nbsp;
+                                    {new Date(d.date + "T00:00:00").toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                </span>
                             </div>
                         );
                     })
@@ -286,7 +329,7 @@ const FutureDueDatesPage = () => {
                 show={showModal}
                 onClose={() => setShowModal(false)}
                 onSubmit={handleAddTask}
-                courses={courseList.map((name) => ({ name }))}
+                courses={courseList} // Pass the courseList directly
                 {...{
                     newTaskText,
                     setNewTaskText,
@@ -304,6 +347,31 @@ const FutureDueDatesPage = () => {
                     setNewCourseName,
                     handleAddCourse,
                 }}
+            />
+
+            <EditTaskModal
+                show={showEditModal}
+                onClose={(updatedTask) => {
+                    setShowEditModal(false);
+                    if (updatedTask && updatedTask.id) {
+                        setDeadlines((prev) =>
+                            prev.map((oldTask) =>
+                                oldTask.id === updatedTask.id
+                                    ? {
+                                        ...oldTask,
+                                        task: updatedTask.text,     // remap "text" to "task"
+                                        date: updatedTask.due_date, // remap "due_date" to "date"
+                                        course: updatedTask.course,
+                                        completed: updatedTask.completed,
+                                    }
+                                    : oldTask
+                            )
+                        );
+                    }
+                }}
+                task={taskToEdit}
+                courses={courseList}
+                user={user}
             />
         </div>
     );

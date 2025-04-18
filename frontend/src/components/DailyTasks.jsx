@@ -2,20 +2,26 @@ import { useEffect, useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import TaskModal from "./TaskModal";
+import EditTaskModal from "./EditTaskModal"; // Import the edit modal
 
 export default function DailyTasks({
-    tasks, 
-    setTasks, 
-    courses, 
+    tasks,
+    setTasks,
+    courses,
     setCourses,
 }) {
     const { user, loading: authLoading } = useAuth();
-    const [showModal, setShowModal] = useState(false);
+
+    const [showModal, setShowModal] = useState(false);        // For Adding Tasks
+    const [showEditModal, setShowEditModal] = useState(false); // For Editing Tasks
+    const [taskToEdit, setTaskToEdit] = useState(null);
+
     const [newTaskText, setNewTaskText] = useState("");
     const [selectedCourse, setSelectedCourse] = useState("");
     const [tag, setTag] = useState("");
     const [deadline, setDeadline] = useState("");
     const [dueDate, setDueDate] = useState("");
+
     const [showCourseModal, setShowCourseModal] = useState(false);
     const [newCourseName, setNewCourseName] = useState("");
 
@@ -29,20 +35,26 @@ export default function DailyTasks({
     const toggleTask = async (id, currentState) => {
         if (!user) return;
         const updated = !currentState;
-
         try {
             const idToken = await user.getIdToken();
+            // Only updating “completed” here
             const res = await fetch(`http://localhost:8000/tasks/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ completed: updated }),
+                body: JSON.stringify({ 
+                    text: "dummy",  // Will be overwritten in backend if not editing full
+                    course: "dummy",
+                    tag: "dummy",
+                    deadline: new Date().toISOString(),
+                    due_date: todayStr,
+                    completed: updated
+                }),
             });
 
             if (res.ok) {
-                // Update parent's tasks state
                 setTasks((prev) =>
                     prev.map((task) =>
                         task.id === id ? { ...task, completed: updated } : task
@@ -71,9 +83,7 @@ export default function DailyTasks({
                 body: JSON.stringify({ name: newCourseName, color: newColor }),
             });
             if (!res.ok) throw new Error("Failed to add course");
-
             const created = await res.json();
-            // Update parent's courses state
             setCourses((prev) => [...prev, created]);
             setNewCourseName("");
             setShowCourseModal(false);
@@ -105,11 +115,8 @@ export default function DailyTasks({
             });
 
             if (!res.ok) throw new Error("Failed to create task");
-
             const newTask = await res.json();
-            // Update parent's tasks state
             setTasks((prev) => [...prev, newTask]);
-
             setNewTaskText("");
             setSelectedCourse("");
             setTag("");
@@ -138,17 +145,23 @@ export default function DailyTasks({
             {tasksDueToday.length > 0 ? (
                 <ul className="space-y-3 mb-6">
                     {tasksDueToday.map((task) => {
-                        const courseColor = courses.find((c) => c.name === task.course)?.color || '#000';
+                        const courseColor = courses.find((c) => c.name === task.course)?.color || "#000";
                         return (
                             <li key={task.id} className="flex items-start gap-2">
+                                {/* Checkbox for toggling completion */}
                                 <input
                                     type="checkbox"
                                     checked={task.completed}
                                     onChange={() => toggleTask(task.id, task.completed)}
                                     className="accent-purple-500 mt-1"
                                 />
+                                {/* Task text with onClick to edit */}
                                 <span
-                                    className={`text-sm ${
+                                    onClick={() => {
+                                        setTaskToEdit(task);
+                                        setShowEditModal(true);
+                                    }}
+                                    className={`text-sm cursor-pointer ${
                                         task.completed 
                                             ? "line-through text-gray-400" 
                                             : "text-gray-800"
@@ -172,6 +185,7 @@ export default function DailyTasks({
                 Schedule Task
             </button>
 
+            {/* Add Task Modal */}
             <TaskModal
                 show={showModal}
                 onClose={() => setShowModal(false)}
@@ -187,6 +201,16 @@ export default function DailyTasks({
                     newCourseName, setNewCourseName,
                     handleAddCourse
                 }}
+            />
+
+            {/* Edit Task Modal */}
+            <EditTaskModal
+                show={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                task={taskToEdit}
+                setTasks={setTasks}
+                courses={courses}
+                user={user}
             />
         </div>
     );
