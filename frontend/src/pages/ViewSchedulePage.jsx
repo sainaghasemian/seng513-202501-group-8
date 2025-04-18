@@ -1,13 +1,18 @@
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
+import ViewTaskModal from '../components/ViewTaskModal';
 
 export default function ViewSchedulePage() {
     const { token } = useParams();
     const [events, setEvents] = useState(null);
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [ownerName, setOwnerName] = useState("User"); // Default to "User" if no name is available
+
+    // new view‑modal state
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [taskToView, setTaskToView] = useState(null);
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -16,7 +21,7 @@ export default function ViewSchedulePage() {
                 if (!res.ok) throw new Error("bad link");
                 const data = await res.json();
                 setEvents(data.events || []); // Ensure events are set correctly
-                setSelectedCourses([...new Set(data.events.map((e) => e.course))]); // Initialize with all courses
+                setSelectedCourses([...new Set((data.events || []).map((e) => e.course))]); // Initialize with all courses
                 if (data.ownerName) setOwnerName(data.ownerName); // Set the owner's name if available
             } catch (err) {
                 console.error(err);
@@ -27,6 +32,18 @@ export default function ViewSchedulePage() {
     }, [token]);
 
     if (events === null) return <p className="p-6">Loading…</p>;
+
+    // click handler to open view‑only modal
+    const handleEventClick = (clickInfo) => {
+        const clickedId = clickInfo.event.id;
+        // parse into a number to match your events[].id
+        const idNum = parseInt(clickedId, 10);
+        const task = events.find((e) => e.id === idNum);
+        if (task) {
+            setTaskToView(task);
+            setShowViewModal(true);
+        }
+    };
 
     const filteredEvents = events.filter((e) => selectedCourses.includes(e.course));
 
@@ -76,6 +93,13 @@ export default function ViewSchedulePage() {
                     backgroundColor: event.color,
                     borderColor: event.color,
                 }))}
+                eventClick={handleEventClick}   // ← wire up your click
+            />
+
+            <ViewTaskModal
+                show={showViewModal}
+                onClose={() => setShowViewModal(false)}
+                task={taskToView}
             />
         </div>
     );
