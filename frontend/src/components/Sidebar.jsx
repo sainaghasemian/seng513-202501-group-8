@@ -6,13 +6,30 @@ import {
     ChevronsLeft,
     ChevronsRight,
     LogOut,
+    ShieldAlert,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
+import { useState, useEffect } from "react";
 
 const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    // Read the `admin` custom claim from the ID token
+    useEffect(() => {
+        const checkAdmin = async () => {
+          if (!user) return;
+          // this is the forced‑refresh call
+          const idToken = await user.getIdToken(true);
+          const res = await fetch("http://localhost:8000/admin/users", {
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          setIsAdmin(res.ok);
+        };
+        checkAdmin();
+      }, [user]);
 
     const handleLogout = async () => {
         await logout();
@@ -21,8 +38,7 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
 
     return (
         <div
-            className={`bg-[#E5E4E2] fixed top-0 left-0 z-50 shadow-md transition-all duration-300 flex flex-col justify-between ${collapsed ? "w-[60px]" : "w-48"
-                }`}
+            className={`bg-[#E5E4E2] fixed top-0 left-0 z-50 shadow-md transition-all duration-300 flex flex-col justify-between ${collapsed ? "w-[60px]" : "w-48"}`}
             style={{
                 paddingTop: headerHeight,
                 height: `calc(100vh - ${headerHeight})`,
@@ -56,6 +72,16 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
                     collapsed={collapsed}
                     onClick={() => navigate("/study-buddy")}
                 />
+
+                {isAdmin && (
+                    <NavItem
+                        icon={<ShieldAlert />}
+                        label="Admin"
+                        collapsed={collapsed}
+                        onClick={() => navigate("/admin")}
+                    />
+                )}
+
                 <NavItem
                     icon={<Settings />}
                     label="Settings"

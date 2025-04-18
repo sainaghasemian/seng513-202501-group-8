@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import LoginPage from "./pages/LoginPage";
 import CreateAccountPage from './pages/CreateAccountPage';
 import Layout from "./components/Layout";
+import AdminPage  from "./pages/AdminPage";
 
 import "./App.css";
 import StudyBuddyPage from "./pages/StudyBuddyPage";
@@ -50,6 +51,14 @@ function App() {
             element={
               <Layout>
                 <SettingsPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <Layout>
+                <AdminPage />
               </Layout>
             }
           />

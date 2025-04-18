@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import Base, SessionLocal, engine
-from models import Task, User, Course, ShareToken
+from models import Task, User, Course, ShareToken, SystemSettingModel
 from pydantic import BaseModel
 from datetime import datetime
 from dateutil.parser import parse
@@ -36,9 +36,14 @@ security = HTTPBearer()
 def verify_firebase_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         decoded_token = firebase_auth.verify_id_token(credentials.credentials)
-        return decoded_token  # Contains 'uid', 'email', etc.
+        return decoded_token  # Contains 'uid', 'email', and any custom claims like 'admin'
     except Exception as e:
         raise HTTPException(status_code=403, detail="Invalid Firebase ID token")
+
+def admin_guard(user=Depends(verify_firebase_token)):
+    if not user.get("admin", False):
+        raise HTTPException(status_code=403, detail="Admin privilege required")
+    return user
 
 # DB Session
 def get_db():
@@ -91,7 +96,93 @@ class CourseOut(CourseSchema):
     class Config:
         orm_mode = True
 
+class SystemSettingSchema(BaseModel):
+    key: str
+    value: str
+
 # Routes
+# Delete a user
+@app.delete("/admin/users/{uid}")
+def delete_user_account(
+    uid: str,
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard),
+):
+    # 1. Delete from Firebase Auth
+    try:
+        firebase_auth.delete_user(uid)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Firebase delete failed: {e}")
+
+    # 2. Cascade‑clean your local DB
+    db.query(ShareToken).filter(ShareToken.owner_uid == uid).delete()
+    db.query(Task).filter(Task.user_id       == uid).delete()
+    db.query(Course).filter(Course.user_id   == uid).delete()
+    db.query(User).filter(User.uid           == uid).delete()
+    db.commit()
+
+    return {"message": f"User {uid} fully removed"}
+
+# Reset a user's calendar (delete tasks + courses)
+@app.post("/admin/users/{uid}/reset-calendar")
+def reset_calendar(uid: str, db: Session = Depends(get_db), _=Depends(admin_guard)):
+    db.query(Task).filter(Task.user_id == uid).delete()
+    db.query(Course).filter(Course.user_id == uid).delete()
+    db.commit()
+    return {"message": "Calendar reset"}
+
+@app.get("/admin/users")
+def list_users(
+    _ = Depends(admin_guard),
+    db: Session = Depends(get_db)
+):
+    return db.query(User).all()
+
+@app.patch("/admin/users/{uid}/active")
+def toggle_user_active(
+    uid: str,
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard)
+):
+    user_obj = db.query(User).filter(User.uid == uid).first()
+    if not user_obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_obj.active = not getattr(user_obj, 'active', True)
+    db.commit()
+    return {"uid": uid, "active": user_obj.active}
+
+@app.post("/admin/users/{uid}/reset-calendar")
+def reset_user_calendar(
+    uid: str,
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard)
+):
+    db.query(Task).filter(Task.user_id == uid).delete()
+    db.commit()
+    return {"uid": uid, "message": "Calendar reset"}
+
+@app.get("/admin/settings")
+def get_settings(
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard)
+):
+    settings = db.query(SystemSetting).all()
+    return {s.key: s.value for s in settings}
+
+@app.patch("/admin/settings/{key}")
+def update_setting(
+    key: str,
+    setting: SystemSettingSchema,
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard)
+):
+    s = db.query(SystemSetting).filter(SystemSetting.key == key).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Setting not found")
+    s.value = setting.value
+    db.commit()
+    return {"key": key, "value": s.value}
+
 @app.get("/courses", response_model=list[CourseOut])
 def get_courses(db: Session = Depends(get_db), user=Depends(verify_firebase_token)):
     return db.query(Course).filter(Course.user_id == user["uid"]).all()
@@ -247,7 +338,7 @@ def share_schedule(
     user = Depends(verify_firebase_token)
 ):
     if "courses" not in body or not isinstance(body["courses"], list):
-        raise HTTPException(400, detail="courses must be a list")
+        raise HTTPException(status_code=400, detail="courses must be a list")
 
     token = secrets.token_urlsafe(16)
     db_token = ShareToken(
@@ -263,7 +354,7 @@ def share_schedule(
 def get_shared_calendar(token: str, db: Session = Depends(get_db)):
     tok = db.query(ShareToken).filter_by(token=token).first()
     if not tok:
-        raise HTTPException(404, detail="Link not found")
+        raise HTTPException(status_code=404, detail="Link not found")
 
     allowed = json.loads(tok.courses)
     tasks = (

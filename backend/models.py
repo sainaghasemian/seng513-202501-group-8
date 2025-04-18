@@ -17,7 +17,11 @@ class User(Base):
     tasks = relationship("Task", back_populates="user")
     courses = relationship("Course", back_populates="user")
 
-    
+class SystemSettingModel(Base):
+    __tablename__ = "system_settings"
+    key     = Column(String(50), primary_key=True)        # VARCHAR requires length in MySQL
+    enabled = Column(Boolean, nullable=False, default=False)
+
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, index=True)
