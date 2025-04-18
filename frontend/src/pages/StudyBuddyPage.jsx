@@ -4,6 +4,7 @@ import { useAuth } from '../components/AuthContext';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import EditTaskModal from '../components/EditTaskModal';
 
 const StudyBuddyPage = () => {
   const { user, loading } = useAuth();
@@ -14,6 +15,10 @@ const StudyBuddyPage = () => {
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [tasks,           setTasks]           = useState([]);
   const [shareLink,       setShareLink]       = useState('');
+
+  // new modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [taskToEdit,    setTaskToEdit]    = useState(null);
 
   // Ensure user is logged in
   useEffect(() => {
@@ -26,7 +31,6 @@ const StudyBuddyPage = () => {
     const fetchCourses = async () => {
       try {
         const idToken = await user.getIdToken();
-        // TO-DO: Hard coded to localhost for now will need to change
         const res = await fetch('http://localhost:8000/courses', {
           headers: { Authorization: `Bearer ${idToken}` },
         });
@@ -62,8 +66,9 @@ const StudyBuddyPage = () => {
     tasks
       .filter(t => selectedCourses.includes(t.course))
       .map(t => ({
+        id: t.id.toString(),
         title: t.text,
-        date : t.due_date,
+        date: t.due_date,
         extendedProps: { course: t.course, tag: t.tag },
       }))
   , [tasks, selectedCourses]);
@@ -83,7 +88,6 @@ const StudyBuddyPage = () => {
     }
     try {
       const idToken = await user.getIdToken();
-      // TO-DO: Change to non hard codedf link
       const res = await fetch('http://localhost:8000/share-schedule', {
         method: 'POST',
         headers: {
@@ -100,6 +104,24 @@ const StudyBuddyPage = () => {
       console.error('Could not create link', err);
       alert('Something went wrong');
     }
+  };
+
+  const handleEventClick = clickInfo => {
+    const clickedId = clickInfo.event.id;
+    const task = tasks.find(t => t.id.toString() === clickedId);
+    if (task) {
+      setTaskToEdit(task);
+      setShowEditModal(true);
+    }
+  };
+
+  const handleCloseEditModal = updatedTask => {
+    if (updatedTask) {
+      setTasks(prev =>
+        prev.map(t => (t.id === updatedTask.id ? updatedTask : t))
+      );
+    }
+    setShowEditModal(false);
   };
 
   if (loading) return <p className="text-sm text-gray-400">Loading…</p>;
@@ -158,8 +180,18 @@ const StudyBuddyPage = () => {
               borderColor: courseColor,
             };
           })}
+          eventClick={handleEventClick}
         />
       </div>
+
+      <EditTaskModal
+        show={showEditModal}
+        onClose={handleCloseEditModal}
+        task={taskToEdit}
+        setTasks={setTasks}
+        courses={courses}
+        user={user}
+      />
     </div>
   );
 };

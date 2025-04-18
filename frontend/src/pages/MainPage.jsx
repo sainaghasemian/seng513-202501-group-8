@@ -63,23 +63,28 @@ const MainPage = () => {
     }, [user]);
 
     // Attach the course color to each calendar event
-    const calendarEvents = useMemo(() => {
-        return tasks
+    const calendarEvents = useMemo(() =>
+        tasks
             .filter((t) => selectedCourses.includes(t.course))
-            .map((t) => {
-                const thisCourse = courses.find((c) => c.name === t.course);
-                return {
-                    title: t.text,
-                    date: t.due_date,
-                    backgroundColor: thisCourse?.color || '#cccccc',
-                    borderColor: thisCourse?.color || '#cccccc',
-                    extendedProps: {
-                        course: t.course,
-                        tag: t.tag,
-                    },
-                };
-            });
-    }, [tasks, selectedCourses, courses]);
+            .map((t) => ({
+                id: t.id.toString(), // include id
+                title: t.text,
+                date: t.due_date,
+                backgroundColor: (courses.find((c) => c.name === t.course)?.color) || '#ccc',
+                borderColor: (courses.find((c) => c.name === t.course)?.color) || '#ccc',
+                extendedProps: { course: t.course, tag: t.tag },
+            }))
+    , [tasks, selectedCourses, courses]);
+
+    // handler when a calendar event is clicked
+    const handleEventClick = (clickInfo) => {
+        const clickedId = clickInfo.event.id;
+        const task = tasks.find((t) => t.id.toString() === clickedId);
+        if (task) {
+            setTaskToEdit(task);
+            setShowEditModal(true);
+        }
+    };
 
     const completed = tasks.filter((t) => t.completed).length;
     const total = tasks.length;
@@ -195,7 +200,7 @@ const MainPage = () => {
                     ))}
                 </div>
 
-                <Calendar events={calendarEvents} />
+                <Calendar events={calendarEvents} onEventClick={handleEventClick} />
             </div>
 
             <div className="flex flex-col md:w-[25%] gap-4">
