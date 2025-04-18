@@ -34,6 +34,7 @@ const FutureDueDatesPage = () => {
                     date:      updatedTask.due_date, // rename due_date→date
                     course:    updatedTask.course,
                     completed: updatedTask.completed,
+                    tag:       updatedTask.tag,      // merge edited tag
                   }
                 : d
             )
@@ -78,6 +79,7 @@ const FutureDueDatesPage = () => {
                         task: t.text,
                         date: t.due_date,
                         completed: t.completed,
+                        tag: t.tag,                // include tag here
                     }))
                 );
             } catch (err) {
@@ -143,6 +145,7 @@ const FutureDueDatesPage = () => {
                     task: newTask.text,
                     date: newTask.due_date,
                     completed: newTask.completed,
+                    tag: newTask.tag,          // include tag on new items
                 },
             ]);
             setNewTaskText('');
@@ -279,71 +282,84 @@ const FutureDueDatesPage = () => {
             <div className="w-full md:w-2/3">
                 <h2 className="text-2xl font-bold mb-4">Due Today</h2>
                 {dueToday.length ? (
-                    dueToday.map((d) => {
-                        const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
-                        return (
-                            <div key={d.id} className="mb-2 flex items-center gap-2">
-                                {/* Checkbox */}
-                                <input
-                                    type="checkbox"
-                                    checked={d.completed}
-                                    onChange={() => toggleTask(d.id, d.completed)} // Use the updated toggleTask function
-                                    className="accent-purple-500 mt-1"
-                                />
-
-                                {/* Task Text */}
-                                <span
-                                    onClick={() => handleEditTask(d)} // Open edit modal
-                                    className={`text-sm cursor-pointer ${
-                                        d.completed
-                                            ? "line-through text-gray-400"
-                                            : "text-gray-800"
-                                    }`}
+                    <ul className="list-disc list-inside">
+                        {dueToday.map((d) => {
+                            const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
+                            return (
+                                <li
+                                    key={d.id}
+                                    className="mb-1 flex items-center gap-2"
+                                    onClick={() => handleEditTask(d)}
                                 >
-                                    <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
-                                </span>
-                            </div>
-                        );
-                    })
+                                    {/* keep the checkbox but stop its click from opening the edit modal */}
+                                    <input
+                                        type="checkbox"
+                                        checked={d.completed}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => toggleTask(d.id, d.completed)}
+                                        className="accent-purple-500 mt-1"
+                                    />
+                                    <span
+                                        className="font-semibold cursor-pointer"
+                                        style={{ color: courseColor }}
+                                    >
+                                        {d.course}
+                                    </span>
+                                    - {d.task}
+                                    {d.tag && (
+                                        <span className="ml-2 bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                            {d.tag}
+                                        </span>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
                 ) : (
                     <p className="text-gray-500 mb-6">No tasks due today.</p>
                 )}
 
                 <h2 className="text-2xl font-bold mt-6 mb-4">Due Soon</h2>
                 {dueSoon.length ? (
-                    dueSoon.map((d) => {
-                        const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
-                        return (
-                            <div key={d.id} className="mb-2 flex items-center gap-2">
-                                {/* Checkbox */}
-                                <input
-                                    type="checkbox"
-                                    checked={d.completed}
-                                    onChange={() => toggleTask(d.id, d.completed)} // Use the updated toggleTask function
-                                    className="accent-purple-500 mt-1"
-                                />
-
-                                {/* Task Text */}
-                                <span
-                                    onClick={() => handleEditTask(d)} // Open edit modal
-                                    className={`text-sm cursor-pointer ${
-                                        d.completed
-                                            ? "line-through text-gray-400"
-                                            : "text-gray-800"
-                                    }`}
+                    <ul className="list-disc list-inside">
+                        {dueSoon.map((d) => {
+                            const courseColor = courseList.find((c) => c.name === d.course)?.color || "#000";
+                            return (
+                                <li
+                                    key={d.id}
+                                    className="mb-1 flex items-center gap-2"
+                                    onClick={() => handleEditTask(d)}
                                 >
-                                    <strong style={{ color: courseColor }}>{d.course}</strong>: {d.task}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                    &nbsp;Due&nbsp;
-                                    {new Date(d.date + "T00:00:00").toLocaleDateString("en-US", {
-                                        month: "short",
-                                        day: "numeric",
-                                    })}
-                                </span>
-                            </div>
-                        );
-                    })
+                                    <input
+                                        type="checkbox"
+                                        checked={d.completed}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => toggleTask(d.id, d.completed)}
+                                        className="accent-purple-500 mt-1"
+                                    />
+                                    <span
+                                        className="font-semibold cursor-pointer"
+                                        style={{ color: courseColor }}
+                                    >
+                                        {d.course}
+                                    </span>
+                                    - {d.task}
+                                    {d.tag && (
+                                        <span className="ml-2 bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                            {d.tag}
+                                        </span>
+                                    )}
+                                    <span className="ml-2 text-sm text-gray-600">
+                                        Due{" "}
+                                        {new Date(d.date + "T00:00:00").toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 ) : (
                     <p className="text-gray-500">No upcoming tasks.</p>
                 )}

@@ -156,20 +156,28 @@ export default function DailyTasks({
                                     onChange={() => toggleTask(task)}
                                     className="accent-purple-500 mt-1"
                                 />
-                                {/* Task text with onClick to edit */}
-                                <span
-                                    onClick={() => {
-                                        setTaskToEdit(task);
-                                        setShowEditModal(true);
-                                    }}
-                                    className={`text-sm cursor-pointer ${
-                                        task.completed 
-                                            ? "line-through text-gray-400" 
-                                            : "text-gray-800"
-                                    }`}
-                                >
-                                    <strong style={{ color: courseColor }}>{task.course}</strong>: {task.text}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    {/* Task text with onClick to edit */}
+                                    <span
+                                        onClick={() => {
+                                            setTaskToEdit(task);
+                                            setShowEditModal(true);
+                                        }}
+                                        className={`text-sm cursor-pointer ${
+                                            task.completed 
+                                                ? "line-through text-gray-400" 
+                                                : "text-gray-800"
+                                        }`}
+                                    >
+                                        <strong style={{ color: courseColor }}>{task.course}</strong>: {task.text}
+                                    </span>
+                                    {/* new tag pill */}
+                                    {task.tag && (
+                                        <span className="bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                            {task.tag}
+                                        </span>
+                                    )}
+                                </div>
                             </li>
                         );
                     })}

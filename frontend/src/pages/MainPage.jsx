@@ -145,24 +145,33 @@ const MainPage = () => {
                     {upcomingTasks.length > 0 ? (
                         <ul className="list-disc list-inside">
                             {upcomingTasks.map((task) => (
-                                <li key={task.id} className="mb-1" onClick={() => {
-                                    setTaskToEdit(task);
-                                    setShowEditModal(true);
-                                }}>
+                                <li
+                                    key={task.id}
+                                    className="mb-1 flex items-center gap-1"
+                                    onClick={() => { 
+                                        setTaskToEdit(task); 
+                                        setShowEditModal(true); 
+                                    }}
+                                >
                                     <span
-                                        
                                         className="font-semibold cursor-pointer"
                                         style={{ color: courses.find((c) => c.name === task.course)?.color || '#000' }}
                                     >
                                         {task.course}
                                     </span>
-                                    : {task.text}
+                                    - {task.text}
+                                    {/* new tag pill */}
+                                    {task.tag && (
+                                        <span className="ml-2 bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                            {task.tag}
+                                        </span>
+                                    )}
                                     {task.due_date && (
                                         <span className="ml-2 text-sm text-gray-600">
-                                            Due{" "}
-                                            {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
+                                            Due{' '}
+                                            {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
                                             })}
                                         </span>
                                     )}
