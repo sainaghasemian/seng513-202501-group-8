@@ -42,37 +42,24 @@ export default function DailyTasks({
         [tasks]
     );
 
-    const toggleTask = async (id, currentState) => {
+    const toggleTask = async (task) => {
         if (!user) return;
-        const updated = !currentState;
-
-        // Define todayStr as the current date in local time
-        const todayStr = new Date().toISOString().split("T")[0];
+        const updatedTask = { ...task, completed: !task.completed };
 
         try {
             const idToken = await user.getIdToken();
-            // Only updating “completed” here
-            const res = await fetch(`http://localhost:8000/tasks/${id}`, {
+            const res = await fetch(`http://localhost:8000/tasks/${task.id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({
-                    text: "dummy", // Will be overwritten in backend if not editing full
-                    course: "dummy",
-                    tag: "dummy",
-                    deadline: new Date().toISOString(),
-                    due_date: todayStr, // Use todayStr here
-                    completed: updated,
-                }),
+                body: JSON.stringify(updatedTask),
             });
 
             if (res.ok) {
                 setTasks((prev) =>
-                    prev.map((task) =>
-                        task.id === id ? { ...task, completed: updated } : task
-                    )
+                    prev.map((t) => (t.id === task.id ? updatedTask : t))
                 );
             } else {
                 console.error("Failed to update task");
@@ -166,7 +153,7 @@ export default function DailyTasks({
                                 <input
                                     type="checkbox"
                                     checked={task.completed}
-                                    onChange={() => toggleTask(task.id, task.completed)}
+                                    onChange={() => toggleTask(task)}
                                     className="accent-purple-500 mt-1"
                                 />
                                 {/* Task text with onClick to edit */}
