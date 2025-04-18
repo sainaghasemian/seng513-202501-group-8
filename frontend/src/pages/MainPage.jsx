@@ -18,6 +18,17 @@ const MainPage = () => {
     const [showEditModal, setShowEditModal] = useState(false); // State for EditTaskModal
     const [taskToEdit, setTaskToEdit] = useState(null); // Task to edit
 
+    // new handler for modal close
+    const handleCloseEditModal = (updatedTask) => {
+        if (updatedTask) {
+            // replace the old task with the new one
+            setTasks((prev) =>
+                prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+            );
+        }
+        setShowEditModal(false);
+    };
+
     useEffect(() => {
         if (!loading && !user) {
             navigate('/');
@@ -205,7 +216,7 @@ const MainPage = () => {
             {/* Edit Task Modal */}
             <EditTaskModal
                 show={showEditModal}
-                onClose={() => setShowEditModal(false)}
+                onClose={handleCloseEditModal} // use the new handler
                 task={taskToEdit}
                 setTasks={setTasks}
                 courses={courses}

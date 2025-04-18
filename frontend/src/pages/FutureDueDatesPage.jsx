@@ -19,6 +19,28 @@ const FutureDueDatesPage = () => {
     const [showCourseModal, setShowCourseModal] = useState(false);
     const [newCourseName, setNewCourseName] = useState('');
 
+    const handleCloseEditModal = (updatedTask) => {
+        // always hide the modal
+        setShowEditModal(false);
+      
+        // if the modal returned an updated task, merge it into your deadlines array
+        if (updatedTask && updatedTask.id) {
+          setDeadlines(prev =>
+            prev.map(d =>
+              d.id === updatedTask.id
+                ? {
+                    ...d,
+                    task:      updatedTask.text,     // rename text→task
+                    date:      updatedTask.due_date, // rename due_date→date
+                    course:    updatedTask.course,
+                    completed: updatedTask.completed,
+                  }
+                : d
+            )
+          );
+        }
+    };
+
     const { user, loading } = useAuth();
     const navigate = useNavigate();
 
@@ -360,24 +382,7 @@ const FutureDueDatesPage = () => {
 
             <EditTaskModal
                 show={showEditModal}
-                onClose={(updatedTask) => {
-                    setShowEditModal(false);
-                    if (updatedTask && updatedTask.id) {
-                        setDeadlines((prev) =>
-                            prev.map((oldTask) =>
-                                oldTask.id === updatedTask.id
-                                    ? {
-                                        ...oldTask,
-                                        task: updatedTask.text,     // remap "text" to "task"
-                                        date: updatedTask.due_date, // remap "due_date" to "date"
-                                        course: updatedTask.course,
-                                        completed: updatedTask.completed,
-                                    }
-                                    : oldTask
-                            )
-                        );
-                    }
-                }}
+                onClose={handleCloseEditModal}
                 task={taskToEdit}
                 courses={courseList}
                 user={user}
