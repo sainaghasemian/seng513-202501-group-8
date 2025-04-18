@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react"; // Removed useEffect
 import { Plus } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import TaskModal from "./TaskModal";
@@ -25,16 +25,30 @@ export default function DailyTasks({
     const [showCourseModal, setShowCourseModal] = useState(false);
     const [newCourseName, setNewCourseName] = useState("");
 
-    // Use the parent's tasks array to find today's tasks
-    const todayStr = new Date().toISOString().split("T")[0];
+    const isToday = (date) => {
+        // Force midnight local time by appending "T00:00:00"
+        const taskDate = new Date(date + "T00:00:00");
+        const now = new Date();
+
+        return (
+            now.getFullYear() === taskDate.getFullYear() &&
+            now.getMonth() === taskDate.getMonth() &&
+            now.getDate() === taskDate.getDate()
+        );
+    };
+
     const tasksDueToday = useMemo(
-        () => tasks.filter((task) => task.due_date === todayStr),
-        [tasks, todayStr]
+        () => tasks.filter((task) => isToday(task.due_date)),
+        [tasks]
     );
 
     const toggleTask = async (id, currentState) => {
         if (!user) return;
         const updated = !currentState;
+
+        // Define todayStr as the current date in local time
+        const todayStr = new Date().toISOString().split("T")[0];
+
         try {
             const idToken = await user.getIdToken();
             // Only updating “completed” here
@@ -44,13 +58,13 @@ export default function DailyTasks({
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify({ 
-                    text: "dummy",  // Will be overwritten in backend if not editing full
+                body: JSON.stringify({
+                    text: "dummy", // Will be overwritten in backend if not editing full
                     course: "dummy",
                     tag: "dummy",
                     deadline: new Date().toISOString(),
-                    due_date: todayStr,
-                    completed: updated
+                    due_date: todayStr, // Use todayStr here
+                    completed: updated,
                 }),
             });
 

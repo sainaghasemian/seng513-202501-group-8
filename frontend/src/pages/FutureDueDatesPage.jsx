@@ -195,14 +195,23 @@ const FutureDueDatesPage = () => {
         setShowEditModal(true);
     };
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const toMidnight = (d) => new Date(`${d}T00:00:00`);
+    const isDueToday = (date) => {
+        // Force midnight local time by appending "T00:00:00"
+        const taskDate = new Date(date + "T00:00:00");
+        const now = new Date();
+        return (
+            now.getFullYear() === taskDate.getFullYear() &&
+            now.getMonth() === taskDate.getMonth() &&
+            now.getDate() === taskDate.getDate()
+        );
+    };
 
-    const isDueToday = (date) =>
-        toMidnight(date).getTime() === toMidnight(todayStr).getTime();
     const isDueSoon = (date) => {
-        const diff = (toMidnight(date) - toMidnight(todayStr)) / (1000 * 60 * 60 * 24);
-        return diff > 0 && diff <= 7;
+        // Compare local midnight dates
+        const now = new Date();
+        const taskDate = new Date(date + "T00:00:00");
+        const diffInDays = (taskDate - now) / (1000 * 60 * 60 * 24);
+        return diffInDays > 0 && diffInDays <= 7;
     };
 
     const toggleCourse = (course) => {
