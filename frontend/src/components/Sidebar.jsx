@@ -8,15 +8,15 @@ import {
     LogOut,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../components/AuthContext"; // Import the AuthContext
+import { useAuth } from "../components/AuthContext";
 
 const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
     const navigate = useNavigate();
-    const { logout } = useAuth(); // Access the logout function from AuthContext
+    const { logout } = useAuth();
 
     const handleLogout = async () => {
-        await logout(); // Log out the user
-        navigate("/"); // Redirect to the login page
+        await logout();
+        navigate("/");
     };
 
     return (
@@ -30,7 +30,7 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
             }}
         >
             <nav className={`flex flex-col gap-6 px-3 ${collapsed && "items-center"}`}>
-                {/* Collapse/Expand Button – now inline with nav */}
+                {/* Collapse/Expand Button*/}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
                     className="bg-white rounded-full p-1 shadow transition-transform hover:scale-105"

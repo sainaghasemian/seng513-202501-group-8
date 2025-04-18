@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react"; // Removed useEffect
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import TaskModal from "./TaskModal";
-import EditTaskModal from "./EditTaskModal"; // Import the edit modal
+import EditTaskModal from "./EditTaskModal";
 
 export default function DailyTasks({
     tasks,
@@ -12,8 +12,8 @@ export default function DailyTasks({
 }) {
     const { user, loading: authLoading } = useAuth();
 
-    const [showModal, setShowModal] = useState(false);        // For Adding Tasks
-    const [showEditModal, setShowEditModal] = useState(false); // For Editing Tasks
+    const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [taskToEdit, setTaskToEdit] = useState(null);
 
     const [newTaskText, setNewTaskText] = useState("");
@@ -129,7 +129,6 @@ export default function DailyTasks({
         }
     };
 
-    // Show loading if needed
     if (authLoading) {
         return <p className="text-sm text-gray-400">Loading...</p>;
     }
@@ -171,7 +170,7 @@ export default function DailyTasks({
                                     >
                                         <strong style={{ color: courseColor }}>{task.course}</strong>: {task.text}
                                     </span>
-                                    {/* new tag pill */}
+                                    {/* Tag Pill */}
                                     {task.tag && (
                                         <span className="bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">
                                             {task.tag}

@@ -8,9 +8,8 @@ export default function ViewSchedulePage() {
     const { token } = useParams();
     const [events, setEvents] = useState(null);
     const [selectedCourses, setSelectedCourses] = useState([]);
-    const [ownerName, setOwnerName] = useState("User"); // Default to "User" if no name is available
+    const [ownerName, setOwnerName] = useState("User");
 
-    // new view‑modal state
     const [showViewModal, setShowViewModal] = useState(false);
     const [taskToView, setTaskToView] = useState(null);
 
@@ -20,12 +19,12 @@ export default function ViewSchedulePage() {
                 const res = await fetch(`http://localhost:8000/shared/${token}`);
                 if (!res.ok) throw new Error("bad link");
                 const data = await res.json();
-                setEvents(data.events || []); // Ensure events are set correctly
-                setSelectedCourses([...new Set((data.events || []).map((e) => e.course))]); // Initialize with all courses
-                if (data.ownerName) setOwnerName(data.ownerName); // Set the owner's name if available
+                setEvents(data.events || []);
+                setSelectedCourses([...new Set((data.events || []).map((e) => e.course))]);
+                if (data.ownerName) setOwnerName(data.ownerName);
             } catch (err) {
                 console.error(err);
-                setEvents([]); // Show “nothing” instead of spinner forever
+                setEvents([]);
             }
         };
         fetchEvents();
@@ -33,10 +32,9 @@ export default function ViewSchedulePage() {
 
     if (events === null) return <p className="p-6">Loading…</p>;
 
-    // click handler to open view‑only modal
+
     const handleEventClick = (clickInfo) => {
         const clickedId = clickInfo.event.id;
-        // parse into a number to match your events[].id
         const idNum = parseInt(clickedId, 10);
         const task = events.find((e) => e.id === idNum);
         if (task) {
@@ -48,11 +46,9 @@ export default function ViewSchedulePage() {
     const filteredEvents = events.filter((e) => selectedCourses.includes(e.course));
 
     return (
-        <div className="p-6 pt-20"> {/* Add padding to move content below the header */}
-            {/* Big Title */}
+        <div className="p-6 pt-20">
             <h1 className="text-4xl font-bold mb-6">{ownerName}'s Shared Calendar</h1>
 
-            {/* Course Filter Heading */}
             <h2 className="text-2xl font-semibold mb-4">Courses</h2>
 
             {/* Course Filters */}
@@ -93,7 +89,7 @@ export default function ViewSchedulePage() {
                     backgroundColor: event.color,
                     borderColor: event.color,
                 }))}
-                eventClick={handleEventClick}   // ← wire up your click
+                eventClick={handleEventClick}
             />
 
             <ViewTaskModal

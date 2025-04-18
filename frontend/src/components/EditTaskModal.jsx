@@ -32,7 +32,6 @@ export default function EditTaskModal({
     try {
         const idToken = await user.getIdToken();
 
-        // Format the deadline as an ISO 8601 datetime string
         const fullDeadline = deadline
             ? new Date(`${dueDate}T${deadline}`).toISOString()
             : null;
@@ -47,7 +46,7 @@ export default function EditTaskModal({
                 text,
                 course: selectedCourse,
                 tag,
-                deadline: fullDeadline, // Send the properly formatted deadline
+                deadline: fullDeadline,
                 due_date: dueDate,
                 completed,
             }),
@@ -56,7 +55,7 @@ export default function EditTaskModal({
         if (!res.ok) throw new Error("Failed to update task");
 
         const updatedTask = await res.json();
-        onClose(updatedTask); // Pass the updated task to the parent component
+        onClose(updatedTask);
     } catch (err) {
         console.error("Error updating task:", err);
     }

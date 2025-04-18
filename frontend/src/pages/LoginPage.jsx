@@ -11,11 +11,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard"); // Redirect if already logged in to an account
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
-  // State for form fields
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +28,6 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
 
-      // Optional: Send token to backend for verification
       await fetch("http://localhost:8000/api/protected", {
         method: "POST",
         headers: {

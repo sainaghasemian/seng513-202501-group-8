@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext'; 
 import TaskModal from '../components/TaskModal';
-import EditTaskModal from '../components/EditTaskModal'; // Import the edit modal
+import EditTaskModal from '../components/EditTaskModal';
 
 const FutureDueDatesPage = () => {
     const [deadlines, setDeadlines] = useState([]);
     const [courseList, setCourseList] = useState([]);
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false); // For editing tasks
-    const [taskToEdit, setTaskToEdit] = useState(null); // Task being edited
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [taskToEdit, setTaskToEdit] = useState(null);
     const [newTaskText, setNewTaskText] = useState('');
     const [selectedCourse, setSelectedCourse] = useState('');
     const [tag, setTag] = useState('');
@@ -20,21 +20,19 @@ const FutureDueDatesPage = () => {
     const [newCourseName, setNewCourseName] = useState('');
 
     const handleCloseEditModal = (updatedTask) => {
-        // always hide the modal
         setShowEditModal(false);
       
-        // if the modal returned an updated task, merge it into your deadlines array
         if (updatedTask && updatedTask.id) {
           setDeadlines(prev =>
             prev.map(d =>
               d.id === updatedTask.id
                 ? {
                     ...d,
-                    task:      updatedTask.text,     // rename text→task
-                    date:      updatedTask.due_date, // rename due_date→date
+                    task:      updatedTask.text,
+                    date:      updatedTask.due_date,
                     course:    updatedTask.course,
                     completed: updatedTask.completed,
-                    tag:       updatedTask.tag,      // merge edited tag
+                    tag:       updatedTask.tag,
                   }
                 : d
             )
@@ -64,8 +62,8 @@ const FutureDueDatesPage = () => {
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
                 const courses = await courseRes.json();
-                setCourseList(courses); // Store full course objects (name and color)
-                setSelectedCourses(courses.map((c) => c.name)); // Initialize selected courses with all course names
+                setCourseList(courses);
+                setSelectedCourses(courses.map((c) => c.name));
 
                 // Fetch tasks
                 const taskRes = await fetch('http://localhost:8000/tasks', {
@@ -79,7 +77,7 @@ const FutureDueDatesPage = () => {
                         task: t.text,
                         date: t.due_date,
                         completed: t.completed,
-                        tag: t.tag,                // include tag here
+                        tag: t.tag,
                     }))
                 );
             } catch (err) {
@@ -145,7 +143,7 @@ const FutureDueDatesPage = () => {
                     task: newTask.text,
                     date: newTask.due_date,
                     completed: newTask.completed,
-                    tag: newTask.tag,          // include tag on new items
+                    tag: newTask.tag,
                 },
             ]);
             setNewTaskText('');
@@ -162,21 +160,19 @@ const FutureDueDatesPage = () => {
     const toggleTask = async (id, currentState) => {
         if (!user) return;
 
-        // Find the task to update
         const taskToUpdate = deadlines.find((task) => task.id === id);
         if (!taskToUpdate) {
             console.error("Task not found");
             return;
         }
 
-        // Prepare the updated task data
         const updatedTask = {
-            text: taskToUpdate.task, // Use the existing task name
-            course: taskToUpdate.course, // Use the existing course
-            tag: taskToUpdate.tag || "", // Use the existing tag or default to an empty string
-            deadline: taskToUpdate.deadline || new Date().toISOString(), // Use the existing deadline
-            due_date: taskToUpdate.date, // Use the existing due date
-            completed: !currentState, // Toggle the completed state
+            text: taskToUpdate.task,
+            course: taskToUpdate.course,
+            tag: taskToUpdate.tag || "",
+            deadline: taskToUpdate.deadline || new Date().toISOString(),
+            due_date: taskToUpdate.date,
+            completed: !currentState,
         };
 
         try {
@@ -187,11 +183,10 @@ const FutureDueDatesPage = () => {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${idToken}`,
                 },
-                body: JSON.stringify(updatedTask), // Send the full task data
+                body: JSON.stringify(updatedTask),
             });
 
             if (res.ok) {
-                // Update the local state with the new completed value
                 setDeadlines((prev) =>
                     prev.map((task) =>
                         task.id === id ? { ...task, completed: updatedTask.completed } : task
@@ -206,14 +201,14 @@ const FutureDueDatesPage = () => {
     };
 
     const handleEditTask = (task) => {
-        // Map the task object to include all required fields for the modal
+
         const taskForEdit = {
             id: task.id,
-            text: task.task, // Map 'task' to 'text'
+            text: task.task,
             course: task.course,
-            tag: task.tag || "", // Default to an empty string if 'tag' is missing
-            deadline: task.date, // Use 'date' as the deadline
-            due_date: task.date, // Use 'date' as the due_date
+            tag: task.tag || "",
+            deadline: task.date,
+            due_date: task.date,
             completed: task.completed,
         };
         setTaskToEdit(taskForEdit);
@@ -232,7 +227,6 @@ const FutureDueDatesPage = () => {
     };
 
     const isDueSoon = (date) => {
-        // Compare local midnight dates
         const now = new Date();
         const taskDate = new Date(date + "T00:00:00");
         const diffInDays = (taskDate - now) / (1000 * 60 * 60 * 24);
@@ -291,7 +285,6 @@ const FutureDueDatesPage = () => {
                                     className="mb-1 flex items-center gap-2"
                                     onClick={() => handleEditTask(d)}
                                 >
-                                    {/* keep the checkbox but stop its click from opening the edit modal */}
                                     <input
                                         type="checkbox"
                                         checked={d.completed}
@@ -376,7 +369,7 @@ const FutureDueDatesPage = () => {
                 show={showModal}
                 onClose={() => setShowModal(false)}
                 onSubmit={handleAddTask}
-                courses={courseList} // Pass the courseList directly
+                courses={courseList}
                 {...{
                     newTaskText,
                     setNewTaskText,

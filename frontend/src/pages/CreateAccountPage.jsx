@@ -5,7 +5,7 @@ import { useAuth } from "../components/AuthContext";
 
 const CreateAccountPage = () => {
   const navigate = useNavigate();
-  const { user, signUp } = useAuth(); // Access user and signUp function from AuthContext
+  const { user, signUp } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -18,7 +18,6 @@ const CreateAccountPage = () => {
 
   const [error, setError] = useState("");
 
-  // Redirect to the main page if the user is already authenticated
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
@@ -41,15 +40,14 @@ const CreateAccountPage = () => {
     }
 
     try {
-      // Use the signUp function from AuthContext
+
       const idToken = await signUp(email, password);
 
-      // Send additional data to backend
       const res = await fetch("http://localhost:8000/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`, // Include the token in the Authorization header
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           first_name: firstName,
@@ -66,7 +64,6 @@ const CreateAccountPage = () => {
     } catch (err) {
       console.error("Signup error:", err);
 
-      // Check for Firebase-specific error codes
       if (err.code === "auth/email-already-in-use") {
         setError("The email address is already in use. Please try logging in or use a different email.");
       } else {

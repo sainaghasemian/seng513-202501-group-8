@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthContext';
 import DailyTasks from '../components/DailyTasks';
 import Calendar from '../components/Calendar';
 import CompletionBar from '../components/CompletionBar';
-import EditTaskModal from '../components/EditTaskModal'; // Import the EditTaskModal
+import EditTaskModal from '../components/EditTaskModal';
 
 const MainPage = () => {
     const { user, loading } = useAuth();
@@ -15,13 +15,12 @@ const MainPage = () => {
     const [selectedCourses, setSelectedCourses] = useState([]);
     const [showColorModal, setShowColorModal] = useState(false);
 
-    const [showEditModal, setShowEditModal] = useState(false); // State for EditTaskModal
-    const [taskToEdit, setTaskToEdit] = useState(null); // Task to edit
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [taskToEdit, setTaskToEdit] = useState(null);
 
-    // new handler for modal close
+
     const handleCloseEditModal = (updatedTask) => {
         if (updatedTask) {
-            // replace the old task with the new one
             setTasks((prev) =>
                 prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
             );
@@ -62,12 +61,11 @@ const MainPage = () => {
         fetchData();
     }, [user]);
 
-    // Attach the course color to each calendar event
     const calendarEvents = useMemo(() =>
         tasks
             .filter((t) => selectedCourses.includes(t.course))
             .map((t) => ({
-                id: t.id.toString(), // include id
+                id: t.id.toString(),
                 title: t.text,
                 date: t.due_date,
                 backgroundColor: (courses.find((c) => c.name === t.course)?.color) || '#ccc',
@@ -76,7 +74,6 @@ const MainPage = () => {
             }))
     , [tasks, selectedCourses, courses]);
 
-    // handler when a calendar event is clicked
     const handleEventClick = (clickInfo) => {
         const clickedId = clickInfo.event.id;
         const task = tasks.find((t) => t.id.toString() === clickedId);
@@ -100,7 +97,6 @@ const MainPage = () => {
         return <p className="text-sm text-gray-400">Loading...</p>;
     }
 
-    // Simple modal to show course colors
     const CourseColorsModal = ({ show, onClose, courses }) => {
         if (!show) return null;
         return (
@@ -160,7 +156,6 @@ const MainPage = () => {
                                         {task.course}
                                     </span>
                                     - {task.text}
-                                    {/* new tag pill */}
                                     {task.tag && (
                                         <span className="ml-2 bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">
                                             {task.tag}
@@ -230,7 +225,7 @@ const MainPage = () => {
             {/* Edit Task Modal */}
             <EditTaskModal
                 show={showEditModal}
-                onClose={handleCloseEditModal} // use the new handler
+                onClose={handleCloseEditModal}
                 task={taskToEdit}
                 setTasks={setTasks}
                 courses={courses}

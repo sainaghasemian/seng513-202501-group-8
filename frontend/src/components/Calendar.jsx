@@ -10,7 +10,7 @@ const Calendar = ({ events, onEventClick }) => {
                 plugins={[dayGridPlugin]}
                 initialView="dayGridMonth"
                 events={events}
-                eventClick={onEventClick}   // ← wire up clicks
+                eventClick={onEventClick}
                 height="auto"
             />
         </div>

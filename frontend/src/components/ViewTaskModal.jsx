@@ -3,16 +3,13 @@ import React from 'react';
 export default function ViewTaskModal({ show, onClose, task }) {
   if (!show || !task) return null;
 
-  // FullCalendar gives us `task.title` and `task.date`
   const name = task.title || '—';
   const tag  = task.tag   || '—';
 
-  // format the ISO‐date string
   const dateStr = task.date
     ? new Date(task.date).toLocaleDateString()
     : '—';
 
-  // format the ISO‐time string if available
   const timeStr = task.deadline
     ? new Date(task.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '—';

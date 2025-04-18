@@ -10,22 +10,18 @@ const StudyBuddyPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // dynamic data
   const [courses,         setCourses]         = useState([]);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [tasks,           setTasks]           = useState([]);
   const [shareLink,       setShareLink]       = useState('');
 
-  // new modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [taskToEdit,    setTaskToEdit]    = useState(null);
 
-  // Ensure user is logged in
   useEffect(() => {
     if (!loading && !user) navigate('/');
   }, [user, loading, navigate]);
 
-  // Fetch course list
   useEffect(() => {
     if (!user) return;
     const fetchCourses = async () => {
@@ -44,7 +40,6 @@ const StudyBuddyPage = () => {
     fetchCourses();
   }, [user]);
 
-  // Fetch tasks for display in Calendar
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -61,7 +56,6 @@ const StudyBuddyPage = () => {
     })();
   }, [user]);
 
-  // Get events for calendar based on what courses the user has selected
   const calendarEvents = useMemo(() =>
     tasks
       .filter(t => selectedCourses.includes(t.course))

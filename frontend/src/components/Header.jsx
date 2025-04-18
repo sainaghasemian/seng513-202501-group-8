@@ -7,11 +7,9 @@ const Header = () => {
   const location = useLocation();
 
   const handleClick = () => {
-    // If your on the Create Account page go back to login
     if (location.pathname === '/signup') {
       navigate('/');
     } else {
-      // If your on any other page go to dashboard
       navigate('/dashboard');
     }
   };

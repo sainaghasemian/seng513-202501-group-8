@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "firebase/auth";
-import { auth } from "../firebase"; // adjust the path as needed
+import { auth } from "../firebase";
 
 const AuthContext = createContext();
 
@@ -14,26 +14,26 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup the listener on unmount
+    return () => unsubscribe();
   }, []);
 
   const signUp = async (email, password) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     setUser(userCredential.user);
-    return userCredential.user.getIdToken(); // Return the ID token
+    return userCredential.user.getIdToken();
   };
 
   const logout = async () => {
-    await signOut(auth); // Sign out the user
-    setUser(null); // Clear the user state
+    await signOut(auth);
+    setUser(null);
   };
 
   const changePassword = async (currentPassword, newPassword) => {
     if (!user) throw new Error("No user is logged in");
 
     const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential); // Reauthenticate the user
-    await updatePassword(user, newPassword); // Update the password
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
   };
 
   return (
