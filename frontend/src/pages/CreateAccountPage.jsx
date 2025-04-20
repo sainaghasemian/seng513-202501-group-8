@@ -11,8 +11,7 @@ const CreateAccountPage = () => {
     email: "",
     firstName: "",
     lastName: "",
-    school: "",
-    role: "student",          
+    school: "",        
     password: "",
     confirmPassword: "",
   });
@@ -61,8 +60,7 @@ const CreateAccountPage = () => {
         body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
-          school: school,
-          role: role,          
+          school: school,     
         }),
       });
 
@@ -95,21 +93,6 @@ const CreateAccountPage = () => {
           <Input label="First Name" name="firstName" value={form.firstName} onChange={handleChange} />
           <Input label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} />
           <Input label="School" name="school" value={form.school} onChange={handleChange} />
-
-          <div className="flex flex-col gap-1">
-            <label className="font-semibold">Role</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="bg-gray-200 rounded-md px-3 py-2"
-              required
-            >
-              <option value="student">Student</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
           <Input label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
           <Input label="Confirm Password" name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} />
 

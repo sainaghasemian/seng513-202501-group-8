@@ -7,79 +7,73 @@ import CompletionBar from '../components/CompletionBar';
 import EditTaskModal from '../components/EditTaskModal';
 
 const MainPage = () => {
-    const { user, loading } = useAuth();
-    const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-    const [tasks, setTasks] = useState([]);
-    const [courses, setCourses] = useState([]);
-    const [selectedCourses, setSelectedCourses] = useState([]);
-    const [showColorModal, setShowColorModal] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [selectedCourses, setSelectedCourses] = useState([]);
+  const [showColorModal, setShowColorModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+  const [role, setRole] = useState(null); // Track user role
 
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [taskToEdit, setTaskToEdit] = useState(null);
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
 
+  useEffect(() => {
+    if (!user) return;
 
-    const handleCloseEditModal = (updatedTask) => {
-        if (updatedTask) {
-            setTasks((prev) =>
-                prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-            );
+    const fetchRoleAndData = async () => {
+      try {
+        const idToken = await user.getIdToken();
+
+        //check role
+        const resSettings = await fetch("http://localhost:8000/users/settings", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        const settings = await resSettings.json();
+
+        if (settings.role === "admin") {
+          navigate("/admin"); 
+          return;
         }
-        setShowEditModal(false);
+
+        setRole(settings.role); 
+
+        //load tasks and courses
+        const resCourses = await fetch('http://localhost:8000/courses', {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        let courseData = [];
+        if (resCourses.ok) {
+          const data = await resCourses.json();
+          if (Array.isArray(data)) courseData = data;
+        }
+        setCourses(courseData);
+        setSelectedCourses(courseData.map((c) => c.name));
+
+        const resTasks = await fetch('http://localhost:8000/tasks', {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        let taskData = [];
+        if (resTasks.ok) {
+          const data = await resTasks.json();
+          if (Array.isArray(data)) taskData = data;
+        }
+        setTasks(taskData);
+      } catch (err) {
+        console.error('Error fetching user role or data:', err);
+      }
     };
 
-    useEffect(() => {
-        if (!loading && !user) {
-            navigate('/');
-        }
-    }, [user, loading, navigate]);
-
-    useEffect(() => {
-        if (!user) return;
-
-        const fetchData = async () => {
-            try {
-                const idToken = await user.getIdToken();
-
-                const resCourses = await fetch('http://localhost:8000/courses', {
-                    headers: { Authorization: `Bearer ${idToken}` },
-                });
-                let courseData = [];
-                if (resCourses.ok) {
-                    const data = await resCourses.json();
-                    if (Array.isArray(data)) {
-                        courseData = data;
-                    } else {
-                        console.error('Unexpected courses response:', data);
-                    }
-                } else {
-                    console.error('Failed to fetch courses:', resCourses.status);
-                }
-                setCourses(courseData);
-                setSelectedCourses(courseData.map((c) => c.name));
-
-                const resTasks = await fetch('http://localhost:8000/tasks', {
-                    headers: { Authorization: `Bearer ${idToken}` },
-                });
-                let taskData = [];
-                if (resTasks.ok) {
-                    const data = await resTasks.json();
-                    if (Array.isArray(data)) {
-                        taskData = data;
-                    } else {
-                        console.error('Unexpected tasks response:', data);
-                    }
-                } else {
-                    console.error('Failed to fetch tasks:', resTasks.status);
-                }
-                setTasks(taskData);
-            } catch (err) {
-                console.error('Failed to load tasks or courses', err);
-            }
-        };
-
-        fetchData();
-    }, [user]);
+    fetchRoleAndData();
+  }, [user, navigate]);
 
     const calendarEvents = useMemo(() =>
         tasks
@@ -144,6 +138,15 @@ const MainPage = () => {
             </div>
         );
     };
+
+    const handleCloseEditModal = (updatedTask) => {
+        if (updatedTask) {
+          setTasks((prev) =>
+            prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+          );
+        }
+        setShowEditModal(false);
+      };
 
     return (
         <div className="pt-[4rem] px-4 flex flex-col md:flex-row gap-4">

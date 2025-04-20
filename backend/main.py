@@ -14,6 +14,8 @@ from firebase_admin import credentials, auth as firebase_auth
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Body
 
+ADMIN_EMAILS = {"sam2@ucalgary.ca"}
+
 # Initialize Firebase
 cred = credentials.Certificate("firebase_key.json")
 firebase_admin.initialize_app(cred)
@@ -101,6 +103,20 @@ class CourseOut(CourseSchema):
 
 # Routes
 
+@app.post("/admin/promote/{uid}")
+def promote_user_to_admin(
+    uid: str,
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard),  # Only existing admin can promote others
+):
+    db_user = db.query(User).filter(User.uid == uid).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_user.role = "admin"
+    db.commit()
+    return {"message": f"{uid} promoted to admin"}
+
 # Delete a user
 @app.delete("/admin/users/{uid}")
 def delete_user_account(
@@ -123,7 +139,6 @@ def delete_user_account(
 
     return {"message": f"User {uid} fully removed"}
 
-# Reset a user's calendar (delete tasks + courses)
 @app.post("/admin/users/{uid}/reset-calendar")
 def reset_user_calendar(
     uid: str,
@@ -255,18 +270,19 @@ def create_user(
     db: Session = Depends(get_db),
 ):
     try:
+        role = "admin" if user.get("email", "") in ADMIN_EMAILS else "student"
         new_user = User(
             uid=user["uid"],
             email=user.get("email", ""),
             first_name=user_data.first_name,
             last_name=user_data.last_name,
             school=user_data.school,
-            role=user_data.role,   # ← set role at signup
+            role=role,
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return {"message": "User created successfully", "user_id": new_user.id}
+        return {"message": f"{role.capitalize()} created successfully", "user_id": new_user.id}
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
@@ -296,8 +312,9 @@ def get_user_settings(
         raise HTTPException(status_code=404, detail="User not found")
 
     return {
-        "time_format":   db_user.time_format,
+        "time_format": db_user.time_format,
         "notifications": db_user.notifications,
+        "role": db_user.role,  
     }
 
 # Create share link

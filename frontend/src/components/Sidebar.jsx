@@ -17,19 +17,27 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
     const { user, logout } = useAuth();
     const [isAdmin, setIsAdmin] = useState(false);
 
-    // Read the `admin` custom claim from the ID token
+    // Check if the user is an admin
     useEffect(() => {
         const checkAdmin = async () => {
-          if (!user) return;
-          // this is the forced‑refresh call
-          const idToken = await user.getIdToken(true);
-          const res = await fetch("http://localhost:8000/admin/users", {
-            headers: { Authorization: `Bearer ${idToken}` },
-          });
-          setIsAdmin(res.ok);
+            if (!user) return;
+            try {
+                const idToken = await user.getIdToken(true);
+                const res = await fetch("http://localhost:8000/users/settings", {
+                    headers: { Authorization: `Bearer ${idToken}` },
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setIsAdmin(data.role === "admin");
+                }
+            } catch (err) {
+                console.error("Failed to fetch user settings:", err);
+            }
         };
+
         checkAdmin();
-      }, [user]);
+    }, [user]);
 
     const handleLogout = async () => {
         await logout();
@@ -46,7 +54,7 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
             }}
         >
             <nav className={`flex flex-col gap-6 px-3 ${collapsed && "items-center"}`}>
-                {/* Collapse/Expand Button*/}
+                {/* Collapse/Expand Button */}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
                     className="bg-white rounded-full p-1 shadow transition-transform hover:scale-105"
@@ -54,25 +62,37 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
                     {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
                 </button>
 
-                <NavItem
-                    icon={<LayoutDashboard />}
-                    label="UniPlanner"
-                    collapsed={collapsed}
-                    onClick={() => navigate("/dashboard")}
-                />
-                <NavItem
-                    icon={<CalendarDays />}
-                    label="Future Due Dates"
-                    collapsed={collapsed}
-                    onClick={() => navigate("/future-due-dates")}
-                />
-                <NavItem
-                    icon={<Users />}
-                    label="Study Buddy / Shared Calendar"
-                    collapsed={collapsed}
-                    onClick={() => navigate("/study-buddy")}
-                />
+                {/* Student/User Only Links */}
+                {!isAdmin && (
+                    <>
+                        <NavItem
+                            icon={<LayoutDashboard />}
+                            label="UniPlanner"
+                            collapsed={collapsed}
+                            onClick={() => navigate("/dashboard")}
+                        />
+                        <NavItem
+                            icon={<CalendarDays />}
+                            label="Future Due Dates"
+                            collapsed={collapsed}
+                            onClick={() => navigate("/future-due-dates")}
+                        />
+                        <NavItem
+                            icon={<Users />}
+                            label="Study Buddy / Shared Calendar"
+                            collapsed={collapsed}
+                            onClick={() => navigate("/study-buddy")}
+                        />
+                        <NavItem
+                            icon={<Settings />}
+                            label="Settings"
+                            collapsed={collapsed}
+                            onClick={() => navigate("/settings")}
+                        />
+                    </>
+                )}
 
+                {/* Admin Only Link */}
                 {isAdmin && (
                     <NavItem
                         icon={<ShieldAlert />}
@@ -81,13 +101,6 @@ const Sidebar = ({ collapsed, setCollapsed, headerHeight }) => {
                         onClick={() => navigate("/admin")}
                     />
                 )}
-
-                <NavItem
-                    icon={<Settings />}
-                    label="Settings"
-                    collapsed={collapsed}
-                    onClick={() => navigate("/settings")}
-                />
             </nav>
 
             {/* Logout Button */}
