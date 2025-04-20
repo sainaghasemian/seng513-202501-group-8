@@ -44,14 +44,34 @@ const MainPage = () => {
                 const resCourses = await fetch('http://localhost:8000/courses', {
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
-                const courseData = await resCourses.json();
+                let courseData = [];
+                if (resCourses.ok) {
+                    const data = await resCourses.json();
+                    if (Array.isArray(data)) {
+                        courseData = data;
+                    } else {
+                        console.error('Unexpected courses response:', data);
+                    }
+                } else {
+                    console.error('Failed to fetch courses:', resCourses.status);
+                }
                 setCourses(courseData);
                 setSelectedCourses(courseData.map((c) => c.name));
 
                 const resTasks = await fetch('http://localhost:8000/tasks', {
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
-                const taskData = await resTasks.json();
+                let taskData = [];
+                if (resTasks.ok) {
+                    const data = await resTasks.json();
+                    if (Array.isArray(data)) {
+                        taskData = data;
+                    } else {
+                        console.error('Unexpected tasks response:', data);
+                    }
+                } else {
+                    console.error('Failed to fetch tasks:', resTasks.status);
+                }
                 setTasks(taskData);
             } catch (err) {
                 console.error('Failed to load tasks or courses', err);

@@ -12,6 +12,7 @@ const CreateAccountPage = () => {
     firstName: "",
     lastName: "",
     school: "",
+    role: "student",          
     password: "",
     confirmPassword: "",
   });
@@ -32,7 +33,15 @@ const CreateAccountPage = () => {
     e.preventDefault();
     setError("");
 
-    const { email, password, confirmPassword, firstName, lastName, school } = form;
+    const {
+      email,
+      password,
+      confirmPassword,
+      firstName,
+      lastName,
+      school,
+      role,                
+    } = form;
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
@@ -53,6 +62,7 @@ const CreateAccountPage = () => {
           first_name: firstName,
           last_name: lastName,
           school: school,
+          role: role,          
         }),
       });
 
@@ -85,6 +95,21 @@ const CreateAccountPage = () => {
           <Input label="First Name" name="firstName" value={form.firstName} onChange={handleChange} />
           <Input label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} />
           <Input label="School" name="school" value={form.school} onChange={handleChange} />
+
+          <div className="flex flex-col gap-1">
+            <label className="font-semibold">Role</label>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="bg-gray-200 rounded-md px-3 py-2"
+              required
+            >
+              <option value="student">Student</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <Input label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
           <Input label="Confirm Password" name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} />
 

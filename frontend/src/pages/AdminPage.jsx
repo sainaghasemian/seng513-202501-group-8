@@ -1,51 +1,67 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../components/AuthContext";
 import { api } from "../api";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [claims, setClaims] = useState({});
-  const [users, setUsers] = useState([]);
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const [users, setUsers]   = useState([]);
+  const [error, setError]   = useState("");
   const [loading, setLoading] = useState(true);
 
-  // 1) grab custom claims
-  useEffect(() => {
+  // fetch all users (and redirect if 403)
+  const fetchUsers = useCallback(async () => {
     if (!user) return;
-    user.getIdTokenResult(true)
-      .then(idTokenResult => setClaims(idTokenResult.claims))
-      .catch(console.error);
-  }, [user]);
-
-  // 2) fetch the list once we know we’re admin
-  useEffect(() => {
-    if (!user || !claims.admin) return;
-
-    (async () => {
-      setLoading(true);
-      try {
-        const token = await user.getIdToken(true);
-        const res = await api.get("/admin/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUsers(res.data);
-        setError("");
-      } catch (err) {
+    setLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await api.get("/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data);
+      setError("");
+    } catch (err) {
+      if (err.response?.status === 403) {
+        navigate("/", { replace: true });
+      } else {
         setError(err.response?.data?.detail || err.message);
-      } finally {
-        setLoading(false);
       }
-    })();
-  }, [user, claims.admin]);  // ← no missing deps any more
+    } finally {
+      setLoading(false);
+    }
+  }, [user, navigate]);
 
-  // 3) gate on auth + admin
-  if (!user) return <p>Loading auth…</p>;
-  if (claims.admin === false) return <Navigate to="/" replace />;
-  if (claims.admin === undefined) return <p>Checking permissions…</p>;
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-  if (error)   return <p className="text-red-600">{error}</p>;
-  if (loading) return <p>Loading users…</p>;
+  // remove (delete) a user
+  const handleRemove = async (uid) => {
+    if (!window.confirm("Are you sure you want to remove this user?")) return;
+    const token = await user.getIdToken();
+    await api.delete(`/admin/users/${uid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    fetchUsers();
+  };
+
+  // reset a user's calendar
+  const handleResetCalendar = async (uid) => {
+    if (!window.confirm("Reset this user's calendar?")) return;
+    const token = await user.getIdToken();
+    await api.post(
+      `/admin/users/${uid}/reset-calendar`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    alert("Calendar reset successfully");
+  };
+
+  if (!user)               return <p>Loading auth…</p>;
+  if (error)               return <p className="text-red-600">{error}</p>;
+  if (loading)             return <p>Loading users…</p>;
 
   return (
     <div className="p-6">
@@ -61,7 +77,7 @@ export default function AdminPage() {
           </tr>
         </thead>
         <tbody>
-          {users.map(u => (
+          {users.map((u) => (
             <tr key={u.uid} className="border-t">
               <td className="px-4 py-2 text-sm">{u.uid}</td>
               <td className="px-4 py-2">{u.email}</td>

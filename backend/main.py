@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import Base, SessionLocal, engine
-from models import Task, User, Course, ShareToken, SystemSettingModel
+from models import Task, User, Course, ShareToken
 from pydantic import BaseModel
 from datetime import datetime
 from dateutil.parser import parse
@@ -36,14 +36,16 @@ security = HTTPBearer()
 def verify_firebase_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         decoded_token = firebase_auth.verify_id_token(credentials.credentials)
-        return decoded_token  # Contains 'uid', 'email', and any custom claims like 'admin'
-    except Exception as e:
+        return decoded_token  # Contains 'uid', 'email', etc.
+    except Exception:
         raise HTTPException(status_code=403, detail="Invalid Firebase ID token")
 
-def admin_guard(user=Depends(verify_firebase_token)):
-    if not user.get("admin", False):
+def admin_guard(firebase_user=Depends(verify_firebase_token), db: Session = Depends(lambda: SessionLocal())):
+    # look up our local user record
+    me = db.query(User).filter(User.uid == firebase_user["uid"]).first()
+    if not me or me.role != "admin":
         raise HTTPException(status_code=403, detail="Admin privilege required")
-    return user
+    return me
 
 # DB Session
 def get_db():
@@ -82,6 +84,7 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     school: str
+    role: str   # ← new role field
 
 class UserUpdate(BaseModel):
     time_format: bool
@@ -96,11 +99,8 @@ class CourseOut(CourseSchema):
     class Config:
         orm_mode = True
 
-class SystemSettingSchema(BaseModel):
-    key: str
-    value: str
-
 # Routes
+
 # Delete a user
 @app.delete("/admin/users/{uid}")
 def delete_user_account(
@@ -125,7 +125,11 @@ def delete_user_account(
 
 # Reset a user's calendar (delete tasks + courses)
 @app.post("/admin/users/{uid}/reset-calendar")
-def reset_calendar(uid: str, db: Session = Depends(get_db), _=Depends(admin_guard)):
+def reset_user_calendar(
+    uid: str,
+    db: Session = Depends(get_db),
+    _ = Depends(admin_guard)
+):
     db.query(Task).filter(Task.user_id == uid).delete()
     db.query(Course).filter(Course.user_id == uid).delete()
     db.commit()
@@ -138,57 +142,25 @@ def list_users(
 ):
     return db.query(User).all()
 
-@app.patch("/admin/users/{uid}/active")
-def toggle_user_active(
-    uid: str,
-    db: Session = Depends(get_db),
-    _ = Depends(admin_guard)
-):
-    user_obj = db.query(User).filter(User.uid == uid).first()
-    if not user_obj:
-        raise HTTPException(status_code=404, detail="User not found")
-    user_obj.active = not getattr(user_obj, 'active', True)
-    db.commit()
-    return {"uid": uid, "active": user_obj.active}
-
-@app.post("/admin/users/{uid}/reset-calendar")
-def reset_user_calendar(
-    uid: str,
-    db: Session = Depends(get_db),
-    _ = Depends(admin_guard)
-):
-    db.query(Task).filter(Task.user_id == uid).delete()
-    db.commit()
-    return {"uid": uid, "message": "Calendar reset"}
-
-@app.get("/admin/settings")
-def get_settings(
-    db: Session = Depends(get_db),
-    _ = Depends(admin_guard)
-):
-    settings = db.query(SystemSetting).all()
-    return {s.key: s.value for s in settings}
-
-@app.patch("/admin/settings/{key}")
-def update_setting(
-    key: str,
-    setting: SystemSettingSchema,
-    db: Session = Depends(get_db),
-    _ = Depends(admin_guard)
-):
-    s = db.query(SystemSetting).filter(SystemSetting.key == key).first()
-    if not s:
-        raise HTTPException(status_code=404, detail="Setting not found")
-    s.value = setting.value
-    db.commit()
-    return {"key": key, "value": s.value}
-
 @app.get("/courses", response_model=list[CourseOut])
-def get_courses(db: Session = Depends(get_db), user=Depends(verify_firebase_token)):
+def get_courses(
+    db: Session = Depends(get_db),
+    user=Depends(verify_firebase_token)
+):
     return db.query(Course).filter(Course.user_id == user["uid"]).all()
 
 @app.post("/courses", response_model=CourseOut)
-def add_course(course: CourseSchema, db: Session = Depends(get_db), user=Depends(verify_firebase_token)):
+def add_course(
+    course: CourseSchema,
+    db: Session = Depends(get_db),
+    user=Depends(verify_firebase_token)
+):
+    # ensure user exists locally
+    db_user = db.query(User).filter(User.uid == user["uid"]).first()
+    if not db_user:
+        db_user = User(uid=user["uid"], email=user.get("email", ""))
+        db.add(db_user)
+        db.commit()
     db_course = Course(name=course.name, color=course.color, user_id=user["uid"])
     db.add(db_course)
     db.commit()
@@ -210,9 +182,9 @@ def create_task(
 ):    
     try:
         parsed_deadline = (
-        datetime.fromisoformat(task.deadline.replace("Z", ""))
-        if isinstance(task.deadline, str) else task.deadline
-    )
+            datetime.fromisoformat(task.deadline.replace("Z", ""))
+            if isinstance(task.deadline, str) else task.deadline
+        )
 
         db_task = Task(
             text      = task.text,
@@ -232,11 +204,10 @@ def create_task(
         print("Error creating task:", e)
         raise HTTPException(status_code=500, detail="Task creation failed")
 
-
 @app.patch("/tasks/{task_id}", response_model=dict)
 def update_task(
     task_id: int,
-    update_data: TaskUpdateFull,  # Updated schema to match all fields
+    update_data: TaskUpdateFull,
     db: Session = Depends(get_db),
     user=Depends(verify_firebase_token),
 ):
@@ -244,23 +215,22 @@ def update_task(
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    db_task.text = update_data.text
-    db_task.course = update_data.course
-    db_task.tag = update_data.tag
-    db_task.deadline = update_data.deadline
-    db_task.due_date = update_data.due_date
+    db_task.text      = update_data.text
+    db_task.course    = update_data.course
+    db_task.tag       = update_data.tag
+    db_task.deadline  = update_data.deadline
+    db_task.due_date  = update_data.due_date
     db_task.completed = update_data.completed
 
     db.commit()
     db.refresh(db_task)
-
     return {
-        "id": db_task.id,
-        "text": db_task.text,
-        "course": db_task.course,
-        "tag": db_task.tag,
-        "deadline": db_task.deadline,
-        "due_date": db_task.due_date,
+        "id":        db_task.id,
+        "text":      db_task.text,
+        "course":    db_task.course,
+        "tag":       db_task.tag,
+        "deadline":  db_task.deadline,
+        "due_date":  db_task.due_date,
         "completed": db_task.completed,
     }
 
@@ -285,19 +255,19 @@ def create_user(
     db: Session = Depends(get_db),
 ):
     try:
-        # Using ORM to create the user
         new_user = User(
             uid=user["uid"],
             email=user.get("email", ""),
             first_name=user_data.first_name,
             last_name=user_data.last_name,
             school=user_data.school,
+            role=user_data.role,   # ← set role at signup
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
         return {"message": "User created successfully", "user_id": new_user.id}
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.patch("/users/settings")
@@ -309,8 +279,8 @@ def update_user_settings(
     db_user = db.query(User).filter(User.uid == user["uid"]).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    db_user.time_format = user_data.time_format
+
+    db_user.time_format   = user_data.time_format
     db_user.notifications = user_data.notifications
     db.commit()
     db.refresh(db_user)
@@ -324,9 +294,9 @@ def get_user_settings(
     db_user = db.query(User).filter(User.uid == user["uid"]).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return {
-        "time_format": db_user.time_format,
+        "time_format":   db_user.time_format,
         "notifications": db_user.notifications,
     }
 
@@ -357,17 +327,9 @@ def get_shared_calendar(token: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Link not found")
 
     allowed = json.loads(tok.courses)
-    tasks = (
-        db.query(Task)
-        .filter(Task.user_id == tok.owner_uid, Task.course.in_(allowed))
-        .all()
-    )
-    courses = (
-        db.query(Course)
-        .filter(Course.user_id == tok.owner_uid, Course.name.in_(allowed))
-        .all()
-    )
-    user = db.query(User).filter(User.uid == tok.owner_uid).first()
+    tasks   = db.query(Task  ).filter(Task.user_id == tok.owner_uid, Task.course.in_(allowed)).all()
+    courses = db.query(Course).filter(Course.user_id == tok.owner_uid, Course.name .in_(allowed)).all()
+    user    = db.query(User  ).filter(User.uid       == tok.owner_uid).first()
     course_colors = {c.name: c.color for c in courses}
 
     # build a full event payload

@@ -13,14 +13,10 @@ class User(Base):
     school = Column(String(255))
     time_format = Column(Boolean, default=True)  # True for 12H, False for 24H
     notifications = Column(Boolean, default=True)  # True for enabled, False for disabled
+    role          = Column(String(20), default="student", nullable=False)  # ← new role field
     
     tasks = relationship("Task", back_populates="user")
     courses = relationship("Course", back_populates="user")
-
-class SystemSettingModel(Base):
-    __tablename__ = "system_settings"
-    key     = Column(String(50), primary_key=True)        # VARCHAR requires length in MySQL
-    enabled = Column(Boolean, nullable=False, default=False)
 
 class Task(Base):
     __tablename__ = "tasks"
