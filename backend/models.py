@@ -11,9 +11,9 @@ class User(Base):
     first_name = Column(String(100))
     last_name = Column(String(100))
     school = Column(String(255))
-    time_format = Column(Boolean, default=True)  # True for 12H, False for 24H
-    notifications = Column(Boolean, default=True)  # True for enabled, False for disabled
-    role          = Column(String(20), default="student", nullable=False)  # ← new role field
+    time_format = Column(Boolean, default=True)  
+    notifications = Column(Boolean, default=True)  
+    role          = Column(String(20), default="student", nullable=False)  
     
     tasks = relationship("Task", back_populates="user")
     courses = relationship("Course", back_populates="user")
@@ -35,7 +35,7 @@ class Course(Base):
     __tablename__ = "courses"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False)
-    color = Column(String(7))  # hex color string like #abcdef
+    color = Column(String(7))  
 
     user_id = Column(String(128), ForeignKey("users.uid"))
     user = relationship("User", back_populates="courses")
@@ -45,6 +45,5 @@ class ShareToken(Base):
     id        = Column(Integer, primary_key=True, index=True)
     token     = Column(String(64), unique=True, index=True, nullable=False)
     owner_uid = Column(String(128), ForeignKey("users.uid"))
-    # store JSON list of course names (["ENEL 500", ...])
     courses   = Column(Text, nullable=False)
     created   = Column(DateTime, default=datetime.utcnow)
