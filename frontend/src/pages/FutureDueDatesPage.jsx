@@ -216,7 +216,7 @@ const FutureDueDatesPage = () => {
     };
 
     const isDueToday = (date) => {
-        // Force midnight local time by appending "T00:00:00"
+        //force midnight local time by appending "T00:00:00"
         const taskDate = new Date(date + "T00:00:00");
         const now = new Date();
         return (
