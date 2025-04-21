@@ -14,7 +14,7 @@ from firebase_admin import credentials, auth as firebase_auth
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Body
 
-ADMIN_EMAILS = {"sam2@ucalgary.ca"}
+ADMIN_EMAILS = {"sam2@ucalgary.ca", "admin@ualberta.ca"}
 
 # Initialize Firebase
 cred = credentials.Certificate("firebase_key.json")
@@ -312,6 +312,11 @@ def get_user_settings(
     db_user = db.query(User).filter(User.uid == user["uid"]).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    if db_user.email in ADMIN_EMAILS and db_user.role != "admin":
+        db_user.role = "admin"
+        db.commit()
+        db.refresh(db_user)
 
     return {
         "time_format": db_user.time_format,
