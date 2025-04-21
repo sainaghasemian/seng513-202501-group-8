@@ -60,7 +60,8 @@ const CreateAccountPage = () => {
         body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
-          school: school,     
+          school: school,  
+          role: "student"   
         }),
       });
 
