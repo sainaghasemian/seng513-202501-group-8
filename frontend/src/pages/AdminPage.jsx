@@ -85,9 +85,10 @@ export default function AdminPage() {
   if (error) return <p className="text-red-600">{error}</p>;
   if (loading) return <p>Loading users…</p>;
 
+  // only exclude the current admin, show everyone else
   const filteredUsers = users.filter(
     (u) =>
-      u.role !== "admin" &&
+      u.uid !== user.uid &&
       (u.first_name + " " + u.last_name + u.email + u.school)
         .toLowerCase()
         .includes(search.toLowerCase())
@@ -100,7 +101,7 @@ export default function AdminPage() {
       </h1>
 
       <div className="w-full max-w-3xl bg-purple-100 p-6 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold text-purple-800 mb-3">Approved Users</h2>
+        <h2 className="text-lg font-semibold text-purple-800 mb-3">All Users</h2>
         <input
           type="text"
           placeholder="Search Users"
