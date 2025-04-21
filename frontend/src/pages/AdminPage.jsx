@@ -77,7 +77,9 @@ export default function AdminPage() {
           </tr>
         </thead>
         <tbody>
-          {users.map((u) => (
+        {users
+        .filter((u) => u.uid !== user.uid) 
+        .map((u) => (
             <tr key={u.uid} className="border-t">
               <td className="px-4 py-2 text-sm">{u.uid}</td>
               <td className="px-4 py-2">{u.email}</td>

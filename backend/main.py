@@ -86,7 +86,7 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     school: str
-    role: str   # ← new role field
+    role: str   
 
 class UserUpdate(BaseModel):
     time_format: bool
@@ -124,17 +124,19 @@ def delete_user_account(
     db: Session = Depends(get_db),
     _ = Depends(admin_guard),
 ):
-    # 1. Delete from Firebase Auth
+    #deleting from Firebase Auth
     try:
         firebase_auth.delete_user(uid)
+    except firebase_admin._auth_utils.UserNotFoundError:
+        print(f"Firebase user {uid} not found — continuing with DB cleanup")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Firebase delete failed: {e}")
 
-    # 2. Cascade‑clean your local DB
+    #clean local DB
     db.query(ShareToken).filter(ShareToken.owner_uid == uid).delete()
-    db.query(Task).filter(Task.user_id       == uid).delete()
-    db.query(Course).filter(Course.user_id   == uid).delete()
-    db.query(User).filter(User.uid           == uid).delete()
+    db.query(Task).filter(Task.user_id == uid).delete()
+    db.query(Course).filter(Course.user_id == uid).delete()
+    db.query(User).filter(User.uid == uid).delete()
     db.commit()
 
     return {"message": f"User {uid} fully removed"}
