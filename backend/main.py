@@ -107,7 +107,7 @@ class CourseOut(CourseSchema):
 def promote_user_to_admin(
     uid: str,
     db: Session = Depends(get_db),
-    _ = Depends(admin_guard),  # Only existing admin can promote others
+    _ = Depends(admin_guard),  #only the existing admin can promote others
 ):
     db_user = db.query(User).filter(User.uid == uid).first()
     if not db_user:
@@ -117,7 +117,7 @@ def promote_user_to_admin(
     db.commit()
     return {"message": f"{uid} promoted to admin"}
 
-# Delete a user
+#delete a user
 @app.delete("/admin/users/{uid}")
 def delete_user_account(
     uid: str,
@@ -322,7 +322,7 @@ def get_user_settings(
 # Create share link
 @app.post("/share-schedule")
 def share_schedule(
-    body: dict = Body(...),             # expects {"courses": [..]}
+    body: dict = Body(...),             
     db: Session = Depends(get_db),
     user = Depends(verify_firebase_token)
 ):

@@ -7,6 +7,9 @@ const Header = () => {
   const location = useLocation();
 
   const handleClick = () => {
+    //disabling header for admins
+    if (location.pathname === '/admin') return;
+
     if (location.pathname === '/signup') {
       navigate('/');
     } else {
